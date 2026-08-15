@@ -71,3 +71,46 @@ PostgreSQL
 - 로그인 / 회원가입
 - 고도화된 추천 모델
 
+## Stage 0 개발 환경
+
+필수 도구:
+
+- Python 3.11
+- [uv](https://docs.astral.sh/uv/)
+- Docker Desktop 또는 Docker Engine + Compose
+
+PostgreSQL을 시작한다. 로컬의 일반 PostgreSQL과 충돌하지 않도록 기본 호스트 포트는
+`55433`을 사용한다. `POSTGRES_PORT`로 변경할 경우 `backend/.env`의 `DATABASE_URL`
+포트도 같은 값으로 맞춘다.
+
+```bash
+docker compose up -d --wait postgres
+```
+
+백엔드 전용 가상환경을 만들고 lock된 의존성을 설치한다.
+
+```bash
+cd backend
+uv venv .venv --python 3.11
+uv sync --locked
+```
+
+필요하면 `backend/.env.example`을 `backend/.env`로 복사한 뒤, migration과 서버를
+실행한다. 모든 Python 명령은 `backend/.venv`를 사용한다.
+
+```bash
+.venv/bin/alembic upgrade head
+.venv/bin/uvicorn app.main:app --reload
+```
+
+- Health: `http://127.0.0.1:8000/health`
+- Swagger UI: `http://127.0.0.1:8000/docs`
+
+검증 명령:
+
+```bash
+.venv/bin/python -m pytest
+.venv/bin/ruff check .
+.venv/bin/ruff format --check .
+.venv/bin/pyright
+```

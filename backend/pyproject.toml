@@ -1,0 +1,41 @@
+[project]
+name = "gryffindor-backend"
+version = "0.1.0"
+description = "Smart-glasses shopping support backend"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "alembic>=1.14,<2",
+    "fastapi>=0.115,<1",
+    "psycopg[binary]>=3.2,<4",
+    "pydantic-settings>=2.7,<3",
+    "sqlalchemy>=2.0,<3",
+    "uvicorn[standard]>=0.34,<1",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2",
+    "pyright>=1.1.390,<2",
+    "pytest>=8.3,<9",
+    "pytest-cov>=6,<8",
+    "ruff>=0.9,<1",
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pyright]
+include = ["app", "tests"]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+venv = ".venv"
+venvPath = "."
