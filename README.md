@@ -129,3 +129,27 @@ uv sync --locked
 .venv/bin/ruff format --check .
 .venv/bin/pyright
 ```
+
+## B2 OpenAI Recognition
+
+기본값은 계속 `RECOGNITION_PROVIDER=mock`이므로 일반 개발과 pytest에서는 OpenAI를
+호출하지 않는다. 실제 Provider를 사용할 때만 `backend/.env`에 다음 값을 설정한다.
+
+```bash
+RECOGNITION_PROVIDER=openai
+OPENAI_API_KEY=...
+OPENAI_VISION_MODEL=gpt-5-mini
+OPENAI_TIMEOUT_SECONDS=20
+RECOGNITION_MAX_CANDIDATES=20
+```
+
+실제 API smoke test도 opt-in이다. Catalog 상품 crop과 기대 결과를 명시한 경우에만
+아래처럼 실행한다.
+
+```bash
+RUN_OPENAI_RECOGNITION_SMOKE=1 \
+OPENAI_RECOGNITION_SMOKE_IMAGE=/absolute/path/to/crop.jpg \
+OPENAI_RECOGNITION_SMOKE_EXPECTED_STATUS=MATCHED \
+OPENAI_RECOGNITION_SMOKE_EXPECTED_PRODUCT_ID=mcm_001 \
+.venv/bin/python -m pytest -m openai_smoke
+```
