@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from functools import lru_cache
 from typing import Annotated
 from uuid import UUID
 
@@ -8,9 +9,12 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
 from app.domain.enums import RecognitionStatus, TriggerType
+from app.errors import AppError
 from app.models.product import Product
 from app.models.shopping import SessionProduct
 from app.providers.mock_recognition import MockRecognitionProvider
+from app.providers.openai_recognition import OpenAIRecognitionProvider
+from app.providers.recognition import RecognitionProvider
 from app.schemas.api import (
     ErrorResponse,
     ObservationResponse,
@@ -40,9 +44,39 @@ def get_mock_recognition_provider(settings: AppSettings) -> MockRecognitionProvi
     )
 
 
+def get_recognition_provider(settings: AppSettings) -> RecognitionProvider:
+    if settings.recognition_provider == "mock":
+        return get_mock_recognition_provider(settings)
+
+    if settings.openai_api_key is None:
+        raise _recognition_provider_unavailable()
+    api_key = settings.openai_api_key.get_secret_value()
+    if not api_key:
+        raise _recognition_provider_unavailable()
+
+    return _get_openai_recognition_provider(
+        api_key,
+        settings.openai_vision_model,
+        settings.openai_timeout_seconds,
+    )
+
+
+@lru_cache
+def _get_openai_recognition_provider(
+    api_key: str,
+    model: str,
+    timeout_seconds: float,
+) -> OpenAIRecognitionProvider:
+    return OpenAIRecognitionProvider(
+        api_key=api_key,
+        model=model,
+        timeout_seconds=timeout_seconds,
+    )
+
+
 RecognitionProviderDependency = Annotated[
-    MockRecognitionProvider,
-    Depends(get_mock_recognition_provider),
+    RecognitionProvider,
+    Depends(get_recognition_provider),
 ]
 
 
@@ -106,7 +140,11 @@ async def recognize_product(
     del tracking_id
     image_bytes = await read_valid_image(image, settings.recognition_max_image_bytes)
     normalized_captured_at = _as_utc(captured_at)
-    result = await RecognitionService(db, provider).recognize(
+    result = await RecognitionService(
+        db,
+        provider,
+        candidate_limit=settings.recognition_max_candidates,
+    ).recognize(
         session_id=session_id,
         image_bytes=image_bytes,
         captured_at=normalized_captured_at,
@@ -206,3 +244,11 @@ def _as_utc(value: datetime) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
         return value.replace(tzinfo=UTC)
     return value.astimezone(UTC)
+
+
+def _recognition_provider_unavailable() -> AppError:
+    return AppError(
+        503,
+        "RECOGNITION_PROVIDER_ERROR",
+        "The recognition provider is temporarily unavailable.",
+    )

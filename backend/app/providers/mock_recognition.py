@@ -1,25 +1,12 @@
-from dataclasses import dataclass
-
 from app.domain.enums import RecognitionStatus
+from app.providers.recognition import (
+    RecognitionCandidate,
+    RecognitionDecision,
+    RecognitionProviderError,
+)
 
 
-@dataclass(frozen=True, slots=True)
-class RecognitionCandidate:
-    product_id: str
-    sku: str
-    brand: str
-    name: str
-    category: str
-
-
-@dataclass(frozen=True, slots=True)
-class RecognitionDecision:
-    status: RecognitionStatus
-    product_id: str | None = None
-    candidate_product_ids: tuple[str, ...] = ()
-
-
-class MockRecognitionProviderError(Exception):
+class MockRecognitionProviderError(RecognitionProviderError):
     pass
 
 

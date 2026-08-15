@@ -10,10 +10,10 @@ from app.errors import AppError
 from app.models.common import utc_now
 from app.models.product import Product
 from app.models.shopping import SessionProduct, ShoppingSession
-from app.providers.mock_recognition import (
-    MockRecognitionProvider,
-    MockRecognitionProviderError,
+from app.providers.recognition import (
     RecognitionCandidate,
+    RecognitionProvider,
+    RecognitionProviderError,
 )
 from app.repositories.products import ProductRepository
 from app.repositories.shopping import SessionProductRepository, ShoppingSessionRepository
@@ -68,12 +68,14 @@ class RecognitionService:
     def __init__(
         self,
         db: Session,
-        provider: MockRecognitionProvider,
+        provider: RecognitionProvider,
         pricing: MockPricingService | None = None,
+        candidate_limit: int = 20,
     ) -> None:
         self._db = db
         self._provider = provider
         self._pricing = pricing or MockPricingService()
+        self._candidate_limit = candidate_limit
         self._sessions = ShoppingSessionRepository(db)
         self._products = ProductRepository(db)
         self._session_products = SessionProductRepository(db)
@@ -89,7 +91,8 @@ class RecognitionService:
         dwell_ms: int,
     ) -> RecognitionResult:
         shopping_session = self._get_active_session(session_id)
-        products = self._products.list_all()
+        products = self._products.list_all()[: self._candidate_limit]
+        products_by_product_id = {product.product_id: product for product in products}
         candidates = [
             RecognitionCandidate(
                 product_id=product.product_id,
@@ -103,7 +106,7 @@ class RecognitionService:
 
         try:
             decision = await self._provider.recognize(image_bytes, candidates)
-        except MockRecognitionProviderError as exc:
+        except RecognitionProviderError as exc:
             raise AppError(
                 503,
                 "RECOGNITION_PROVIDER_ERROR",
@@ -114,17 +117,20 @@ class RecognitionService:
             return RecognitionResult(status=RecognitionStatus.UNKNOWN)
 
         if decision.status is RecognitionStatus.AMBIGUOUS:
+            candidate_product_ids = _allowed_candidate_ids(
+                decision.candidate_product_ids,
+                products_by_product_id,
+            )
+            if len(candidate_product_ids) < 2:
+                return RecognitionResult(status=RecognitionStatus.UNKNOWN)
             return RecognitionResult(
                 status=RecognitionStatus.AMBIGUOUS,
-                candidate_product_ids=decision.candidate_product_ids,
+                candidate_product_ids=candidate_product_ids,
             )
 
-        if decision.product_id is None:
-            raise AppError(404, "PRODUCT_NOT_FOUND", "Recognized product was not found.")
-
-        product = self._products.get_by_product_id(decision.product_id)
+        product = products_by_product_id.get(decision.product_id or "")
         if product is None:
-            raise AppError(404, "PRODUCT_NOT_FOUND", "Recognized product was not found.")
+            return RecognitionResult(status=RecognitionStatus.UNKNOWN)
 
         session_product, is_new = self._session_products.upsert_observation(
             session_id=shopping_session.id,
@@ -155,3 +161,14 @@ class RecognitionService:
                 "Recognition is allowed only for an active shopping session.",
             )
         return shopping_session
+
+
+def _allowed_candidate_ids(
+    candidate_product_ids: tuple[str, ...],
+    products_by_product_id: dict[str, Product],
+) -> tuple[str, ...]:
+    allowed_ids: list[str] = []
+    for product_id in candidate_product_ids:
+        if product_id in products_by_product_id and product_id not in allowed_ids:
+            allowed_ids.append(product_id)
+    return tuple(allowed_ids)
