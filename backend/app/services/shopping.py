@@ -1,0 +1,157 @@
+from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
+from uuid import UUID
+
+from sqlalchemy.orm import Session
+
+from app.domain.enums import RecognitionStatus, SessionStatus, TriggerType
+from app.errors import AppError
+from app.models.common import utc_now
+from app.models.product import Product
+from app.models.shopping import SessionProduct, ShoppingSession
+from app.providers.mock_recognition import (
+    MockRecognitionProvider,
+    MockRecognitionProviderError,
+    RecognitionCandidate,
+)
+from app.repositories.products import ProductRepository
+from app.repositories.shopping import SessionProductRepository, ShoppingSessionRepository
+from app.services.pricing import MockPricingService, PriceQuote
+
+
+@dataclass(frozen=True, slots=True)
+class RecognitionResult:
+    status: RecognitionStatus
+    candidate_product_ids: tuple[str, ...] = ()
+    is_new: bool | None = None
+    product: Product | None = None
+    session_product: SessionProduct | None = None
+    pricing: PriceQuote | None = None
+
+
+class ShoppingSessionService:
+    def __init__(self, db: Session) -> None:
+        self._db = db
+        self._sessions = ShoppingSessionRepository(db)
+        self._session_products = SessionProductRepository(db)
+        self._pricing = MockPricingService()
+
+    def create(self, currency: str) -> ShoppingSession:
+        shopping_session = self._sessions.add(ShoppingSession(currency=currency))
+        self._db.commit()
+        return shopping_session
+
+    def complete(self, session_id: UUID) -> ShoppingSession:
+        shopping_session = self.get(session_id)
+        if shopping_session.status is SessionStatus.ACTIVE:
+            shopping_session.status = SessionStatus.COMPLETED
+            shopping_session.completed_at = utc_now()
+            self._db.commit()
+        return shopping_session
+
+    def list_products(self, session_id: UUID) -> tuple[ShoppingSession, list[SessionProduct]]:
+        shopping_session = self.get(session_id)
+        return shopping_session, self._session_products.list_for_session(session_id)
+
+    def price_for(self, product: Product, currency: str) -> PriceQuote:
+        return self._pricing.quote(product, currency)
+
+    def get(self, session_id: UUID) -> ShoppingSession:
+        shopping_session = self._sessions.get(session_id)
+        if shopping_session is None:
+            raise AppError(404, "SESSION_NOT_FOUND", "Shopping session was not found.")
+        return shopping_session
+
+
+class RecognitionService:
+    def __init__(
+        self,
+        db: Session,
+        provider: MockRecognitionProvider,
+        pricing: MockPricingService | None = None,
+    ) -> None:
+        self._db = db
+        self._provider = provider
+        self._pricing = pricing or MockPricingService()
+        self._sessions = ShoppingSessionRepository(db)
+        self._products = ProductRepository(db)
+        self._session_products = SessionProductRepository(db)
+
+    async def recognize(
+        self,
+        *,
+        session_id: UUID,
+        image_bytes: bytes,
+        captured_at: datetime,
+        trigger_type: TriggerType,
+        occupancy_ratio: float,
+        dwell_ms: int,
+    ) -> RecognitionResult:
+        shopping_session = self._get_active_session(session_id)
+        products = self._products.list_all()
+        candidates = [
+            RecognitionCandidate(
+                product_id=product.product_id,
+                sku=product.sku,
+                brand=product.brand,
+                name=product.name,
+                category=product.category,
+            )
+            for product in products
+        ]
+
+        try:
+            decision = await self._provider.recognize(image_bytes, candidates)
+        except MockRecognitionProviderError as exc:
+            raise AppError(
+                503,
+                "RECOGNITION_PROVIDER_ERROR",
+                "The recognition provider is temporarily unavailable.",
+            ) from exc
+
+        if decision.status is RecognitionStatus.UNKNOWN:
+            return RecognitionResult(status=RecognitionStatus.UNKNOWN)
+
+        if decision.status is RecognitionStatus.AMBIGUOUS:
+            return RecognitionResult(
+                status=RecognitionStatus.AMBIGUOUS,
+                candidate_product_ids=decision.candidate_product_ids,
+            )
+
+        if decision.product_id is None:
+            raise AppError(404, "PRODUCT_NOT_FOUND", "Recognized product was not found.")
+
+        product = self._products.get_by_product_id(decision.product_id)
+        if product is None:
+            raise AppError(404, "PRODUCT_NOT_FOUND", "Recognized product was not found.")
+
+        session_product, is_new = self._session_products.upsert_observation(
+            session_id=shopping_session.id,
+            product_id=product.id,
+            captured_at=captured_at,
+            trigger_type=trigger_type,
+            occupancy_ratio=Decimal(str(occupancy_ratio)),
+            dwell_ms=dwell_ms,
+        )
+        quote = self._pricing.quote(product, shopping_session.currency)
+        self._db.commit()
+        return RecognitionResult(
+            status=RecognitionStatus.MATCHED,
+            is_new=is_new,
+            product=product,
+            session_product=session_product,
+            pricing=quote,
+        )
+
+    def _get_active_session(self, session_id: UUID) -> ShoppingSession:
+        shopping_session = self._sessions.get(session_id)
+        if shopping_session is None:
+            raise AppError(404, "SESSION_NOT_FOUND", "Shopping session was not found.")
+        if shopping_session.status is not SessionStatus.ACTIVE:
+            raise AppError(
+                409,
+                "SESSION_NOT_ACTIVE",
+                "Recognition is allowed only for an active shopping session.",
+            )
+        return shopping_session
