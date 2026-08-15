@@ -11,6 +11,7 @@ class RecognitionCandidate:
     brand: str
     name: str
     category: str
+    reference_image_url: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

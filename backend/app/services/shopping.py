@@ -100,6 +100,7 @@ class RecognitionService:
                 brand=product.brand,
                 name=product.name,
                 category=product.category,
+                reference_image_url=product.image_url,
             )
             for product in products
         ]
