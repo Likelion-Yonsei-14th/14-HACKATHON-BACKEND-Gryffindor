@@ -31,13 +31,15 @@ class StaticRecognitionProvider:
     ) -> None:
         self._decision = decision
         self._error = error
+        self.candidates: list[RecognitionCandidate] = []
 
     async def recognize(
         self,
         image_bytes: bytes,
         candidates: list[RecognitionCandidate],
     ) -> RecognitionDecision:
-        del image_bytes, candidates
+        del image_bytes
+        self.candidates = candidates
         if self._error is not None:
             raise self._error
         if self._decision is None:
@@ -107,20 +109,20 @@ def test_mock_vertical_slice_and_duplicate_upsert(
     assert set(first_body) == {"recognitionStatus", "isNew", "observedProduct"}
     observed = first_body["observedProduct"]
     assert observed["product"] == {
-        "productId": "mcm_001",
-        "sku": "MCM-MOCK-001",
-        "brand": "MCM",
-        "name": "Mock Stark Backpack",
-        "category": "bag",
-        "imageUrl": "https://example.com/products/mcm_001.jpg",
+        "productId": "test_outer_001",
+        "sku": "MUSINSA-5477019",
+        "brand": "HAVE HAD",
+        "name": "워시드 포켓 유틸리티 자켓 (데님 블루)",
+        "category": "jacket",
+        "imageUrl": "https://example.com/products/test_outer_001.jpg",
     }
     assert observed["pricing"] == {
-        "retailPriceKrw": 1_090_000,
-        "estimatedRefundKrw": 60_000,
-        "estimatedRefundPriceKrw": 1_030_000,
-        "convertedAmount": "5210.35",
+        "retailPriceKrw": 159_000,
+        "estimatedRefundKrw": 0,
+        "estimatedRefundPriceKrw": 159_000,
+        "convertedAmount": "804.32",
         "convertedCurrency": "CNY",
-        "instantRefundEligible": True,
+        "instantRefundEligible": False,
         "pricingMode": "MOCK",
     }
 
@@ -153,7 +155,7 @@ def test_mock_vertical_slice_and_duplicate_upsert(
     list_body = list_response.json()
     assert list_body["sessionId"] == session_id
     assert len(list_body["items"]) == 1
-    assert list_body["items"][0]["product"]["productId"] == "mcm_001"
+    assert list_body["items"][0]["product"]["productId"] == "test_outer_001"
     assert list_body["items"][0]["purchaseState"] == "UNSET"
     assert list_body["items"][0]["interested"] is False
 
@@ -165,7 +167,7 @@ def test_mock_vertical_slice_and_duplicate_upsert(
             RecognitionStatus.AMBIGUOUS,
             {
                 "recognitionStatus": "AMBIGUOUS",
-                "candidateProductIds": ["mcm_001", "mcm_002"],
+                "candidateProductIds": ["test_outer_001", "test_outer_002"],
             },
         ),
         (RecognitionStatus.UNKNOWN, {"recognitionStatus": "UNKNOWN"}),
@@ -289,7 +291,7 @@ def test_common_provider_error_is_mapped_to_contract_error(
         ),
         RecognitionDecision(
             status=RecognitionStatus.AMBIGUOUS,
-            candidate_product_ids=("mcm_001", "invented_product_id"),
+            candidate_product_ids=("test_outer_001", "invented_product_id"),
         ),
     ],
 )
@@ -322,7 +324,7 @@ def test_real_provider_shape_uses_same_matched_api_dto(
     test_app.dependency_overrides[get_recognition_provider] = lambda: StaticRecognitionProvider(
         decision=RecognitionDecision(
             status=RecognitionStatus.MATCHED,
-            product_id="mcm_002",
+            product_id="test_outer_002",
         )
     )
     session_id = create_session(client)
@@ -337,7 +339,31 @@ def test_real_provider_shape_uses_same_matched_api_dto(
     body = response.json()
     assert set(body) == {"recognitionStatus", "isNew", "observedProduct"}
     assert body["recognitionStatus"] == "MATCHED"
-    assert body["observedProduct"]["product"]["productId"] == "mcm_002"
+    assert body["observedProduct"]["product"]["productId"] == "test_outer_002"
+
+
+def test_catalog_image_urls_are_passed_as_reference_images(
+    client: TestClient,
+    test_app: FastAPI,
+) -> None:
+    provider = StaticRecognitionProvider(
+        decision=RecognitionDecision(status=RecognitionStatus.UNKNOWN)
+    )
+    test_app.dependency_overrides[get_recognition_provider] = lambda: provider
+    session_id = create_session(client)
+
+    response = recognize(
+        client,
+        session_id,
+        captured_at=datetime(2026, 8, 15, 13, 35, tzinfo=UTC),
+    )
+
+    assert response.status_code == 200
+    assert [candidate.reference_image_url for candidate in provider.candidates] == [
+        "https://example.com/products/test_outer_001.jpg",
+        "https://example.com/products/test_outer_002.jpg",
+        "https://example.com/products/test_outer_003.jpg",
+    ]
 
 
 def test_valid_ambiguous_ids_are_filtered_and_deduplicated(
@@ -348,10 +374,10 @@ def test_valid_ambiguous_ids_are_filtered_and_deduplicated(
         decision=RecognitionDecision(
             status=RecognitionStatus.AMBIGUOUS,
             candidate_product_ids=(
-                "mcm_001",
+                "test_outer_001",
                 "invented_product_id",
-                "mcm_001",
-                "mcm_002",
+                "test_outer_001",
+                "test_outer_002",
             ),
         )
     )
@@ -366,7 +392,7 @@ def test_valid_ambiguous_ids_are_filtered_and_deduplicated(
     assert response.status_code == 200
     assert response.json() == {
         "recognitionStatus": "AMBIGUOUS",
-        "candidateProductIds": ["mcm_001", "mcm_002"],
+        "candidateProductIds": ["test_outer_001", "test_outer_002"],
     }
 
 

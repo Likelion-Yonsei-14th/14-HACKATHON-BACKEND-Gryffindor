@@ -38,8 +38,22 @@ class FakeOpenAIClient:
 @pytest.fixture
 def candidates() -> list[RecognitionCandidate]:
     return [
-        RecognitionCandidate("mcm_001", "SKU001", "MCM", "Bag", "bag"),
-        RecognitionCandidate("mcm_002", "SKU002", "MCM", "Wallet", "wallet"),
+        RecognitionCandidate(
+            "catalog_001",
+            "SKU001",
+            "Brand A",
+            "Jacket A",
+            "jacket",
+            reference_image_url="data:image/jpeg;base64,cmVmMQ==",
+        ),
+        RecognitionCandidate(
+            "catalog_002",
+            "SKU002",
+            "Brand B",
+            "Jacket B",
+            "jacket",
+            reference_image_url="data:image/jpeg;base64,cmVmMg==",
+        ),
     ]
 
 
@@ -59,22 +73,22 @@ def provider_with(responses: FakeResponses) -> OpenAIRecognitionProvider:
         (
             OpenAIRecognitionOutput(
                 status=RecognitionStatus.MATCHED,
-                product_id="mcm_001",
+                product_id="catalog_001",
                 candidate_product_ids=[],
             ),
             RecognitionStatus.MATCHED,
-            "mcm_001",
+            "catalog_001",
             (),
         ),
         (
             OpenAIRecognitionOutput(
                 status=RecognitionStatus.AMBIGUOUS,
                 product_id=None,
-                candidate_product_ids=["mcm_001", "mcm_002"],
+                candidate_product_ids=["catalog_001", "catalog_002"],
             ),
             RecognitionStatus.AMBIGUOUS,
             None,
-            ("mcm_001", "mcm_002"),
+            ("catalog_001", "catalog_002"),
         ),
         (
             OpenAIRecognitionOutput(
@@ -111,9 +125,13 @@ async def test_structured_results_map_to_common_decision(
     assert request["text_format"] is OpenAIRecognitionOutput
     user_content = request["input"][1]["content"]
     assert user_content[0]["type"] == "input_text"
-    assert '"product_id": "mcm_001"' in user_content[0]["text"]
-    assert user_content[1]["type"] == "input_image"
-    assert user_content[1]["image_url"].startswith("data:image/jpeg;base64,")
+    assert '"product_id": "catalog_001"' in user_content[0]["text"]
+    image_content = [content for content in user_content if content["type"] == "input_image"]
+    assert [content["image_url"] for content in image_content[:2]] == [
+        "data:image/jpeg;base64,cmVmMQ==",
+        "data:image/jpeg;base64,cmVmMg==",
+    ]
+    assert image_content[2]["image_url"].startswith("data:image/jpeg;base64,")
 
 
 @pytest.mark.anyio
