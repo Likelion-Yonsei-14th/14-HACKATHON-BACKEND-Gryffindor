@@ -6,6 +6,7 @@ requires-python = ">=3.11,<3.12"
 dependencies = [
     "alembic>=1.14,<2",
     "fastapi>=0.115,<1",
+    "openai>=2,<3",
     "pillow>=11,<13",
     "psycopg[binary]>=3.2,<4",
     "pydantic-settings>=2.7,<3",
@@ -27,6 +28,9 @@ dev = [
 addopts = "-ra --strict-markers"
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = [
+    "openai_smoke: opt-in test that makes a real OpenAI API request",
+]
 
 [tool.ruff]
 line-length = 100
