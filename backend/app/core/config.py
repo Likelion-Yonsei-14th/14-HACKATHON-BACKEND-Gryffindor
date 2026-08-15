@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default="postgresql+psycopg://postgres:postgres@localhost:55433/gryffindor"
     )
+    recognition_provider: Literal["mock"] = "mock"
+    mock_recognition_status: Literal["MATCHED", "AMBIGUOUS", "UNKNOWN"] = "MATCHED"
+    mock_recognition_product_id: str | None = "mcm_001"
+    recognition_max_image_bytes: int = Field(default=5 * 1024 * 1024, gt=0)
 
 
 @lru_cache
