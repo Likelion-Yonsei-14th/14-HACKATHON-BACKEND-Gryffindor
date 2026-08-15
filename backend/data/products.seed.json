@@ -1,0 +1,57 @@
+[
+  {
+    "productId": "mcm_001",
+    "sku": "MCM-MOCK-001",
+    "brand": "MCM",
+    "name": "Mock Stark Backpack",
+    "category": "bag",
+    "imageUrl": "https://example.com/products/mcm_001.jpg",
+    "retailPriceKrw": 1090000,
+    "taxRefundSupported": true,
+    "metadata": {"demo": true}
+  },
+  {
+    "productId": "mcm_002",
+    "sku": "MCM-MOCK-002",
+    "brand": "MCM",
+    "name": "Mock Aren Shoulder Bag",
+    "category": "bag",
+    "imageUrl": "https://example.com/products/mcm_002.jpg",
+    "retailPriceKrw": 890000,
+    "taxRefundSupported": true,
+    "metadata": {"demo": true}
+  },
+  {
+    "productId": "mcm_003",
+    "sku": "MCM-MOCK-003",
+    "brand": "MCM",
+    "name": "Mock Visetos Wallet",
+    "category": "wallet",
+    "imageUrl": "https://example.com/products/mcm_003.jpg",
+    "retailPriceKrw": 390000,
+    "taxRefundSupported": true,
+    "metadata": {"demo": true}
+  },
+  {
+    "productId": "mcm_004",
+    "sku": "MCM-MOCK-004",
+    "brand": "MCM",
+    "name": "Mock Liz Shopper",
+    "category": "tote",
+    "imageUrl": "https://example.com/products/mcm_004.jpg",
+    "retailPriceKrw": 950000,
+    "taxRefundSupported": true,
+    "metadata": {"demo": true}
+  },
+  {
+    "productId": "mcm_005",
+    "sku": "MCM-MOCK-005",
+    "brand": "MCM",
+    "name": "Mock Claus Card Case",
+    "category": "card_case",
+    "imageUrl": "https://example.com/products/mcm_005.jpg",
+    "retailPriceKrw": 290000,
+    "taxRefundSupported": true,
+    "metadata": {"demo": true}
+  }
+]
