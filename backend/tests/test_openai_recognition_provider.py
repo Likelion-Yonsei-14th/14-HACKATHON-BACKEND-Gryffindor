@@ -1,0 +1,147 @@
+from types import SimpleNamespace
+from typing import Any, cast
+
+import pytest
+from httpx import Request
+from openai import APITimeoutError, AsyncOpenAI
+
+from app.domain.enums import RecognitionStatus
+from app.providers.openai_recognition import (
+    OpenAIRecognitionOutput,
+    OpenAIRecognitionProvider,
+)
+from app.providers.recognition import RecognitionCandidate, RecognitionProviderError
+
+
+class FakeResponses:
+    def __init__(
+        self,
+        output: OpenAIRecognitionOutput | None = None,
+        error: Exception | None = None,
+    ) -> None:
+        self.output = output
+        self.error = error
+        self.calls: list[dict[str, Any]] = []
+
+    async def parse(self, **kwargs: Any) -> SimpleNamespace:
+        self.calls.append(kwargs)
+        if self.error is not None:
+            raise self.error
+        return SimpleNamespace(output_parsed=self.output)
+
+
+class FakeOpenAIClient:
+    def __init__(self, responses: FakeResponses) -> None:
+        self.responses = responses
+
+
+@pytest.fixture
+def candidates() -> list[RecognitionCandidate]:
+    return [
+        RecognitionCandidate("mcm_001", "SKU001", "MCM", "Bag", "bag"),
+        RecognitionCandidate("mcm_002", "SKU002", "MCM", "Wallet", "wallet"),
+    ]
+
+
+def provider_with(responses: FakeResponses) -> OpenAIRecognitionProvider:
+    return OpenAIRecognitionProvider(
+        api_key="test-key",
+        model="test-model",
+        timeout_seconds=1,
+        client=cast(AsyncOpenAI, FakeOpenAIClient(responses)),
+    )
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("output", "expected_status", "expected_product_id", "expected_candidates"),
+    [
+        (
+            OpenAIRecognitionOutput(
+                status=RecognitionStatus.MATCHED,
+                product_id="mcm_001",
+                candidate_product_ids=[],
+            ),
+            RecognitionStatus.MATCHED,
+            "mcm_001",
+            (),
+        ),
+        (
+            OpenAIRecognitionOutput(
+                status=RecognitionStatus.AMBIGUOUS,
+                product_id=None,
+                candidate_product_ids=["mcm_001", "mcm_002"],
+            ),
+            RecognitionStatus.AMBIGUOUS,
+            None,
+            ("mcm_001", "mcm_002"),
+        ),
+        (
+            OpenAIRecognitionOutput(
+                status=RecognitionStatus.UNKNOWN,
+                product_id=None,
+                candidate_product_ids=[],
+            ),
+            RecognitionStatus.UNKNOWN,
+            None,
+            (),
+        ),
+    ],
+)
+async def test_structured_results_map_to_common_decision(
+    candidates: list[RecognitionCandidate],
+    output: OpenAIRecognitionOutput,
+    expected_status: RecognitionStatus,
+    expected_product_id: str | None,
+    expected_candidates: tuple[str, ...],
+) -> None:
+    fake_responses = FakeResponses(output=output)
+
+    decision = await provider_with(fake_responses).recognize(
+        b"\xff\xd8\xffimage",
+        candidates,
+    )
+
+    assert decision.status is expected_status
+    assert decision.product_id == expected_product_id
+    assert decision.candidate_product_ids == expected_candidates
+
+    request = fake_responses.calls[0]
+    assert request["model"] == "test-model"
+    assert request["text_format"] is OpenAIRecognitionOutput
+    user_content = request["input"][1]["content"]
+    assert user_content[0]["type"] == "input_text"
+    assert '"product_id": "mcm_001"' in user_content[0]["text"]
+    assert user_content[1]["type"] == "input_image"
+    assert user_content[1]["image_url"].startswith("data:image/jpeg;base64,")
+
+
+@pytest.mark.anyio
+async def test_empty_catalog_returns_unknown_without_openai_call() -> None:
+    fake_responses = FakeResponses()
+
+    decision = await provider_with(fake_responses).recognize(b"image", [])
+
+    assert decision.status is RecognitionStatus.UNKNOWN
+    assert fake_responses.calls == []
+
+
+@pytest.mark.anyio
+async def test_timeout_is_mapped_to_common_provider_error(
+    candidates: list[RecognitionCandidate],
+) -> None:
+    timeout = APITimeoutError(request=Request("POST", "https://api.openai.com/v1/responses"))
+    provider = provider_with(FakeResponses(error=timeout))
+
+    with pytest.raises(RecognitionProviderError):
+        await provider.recognize(b"\x89PNG\r\n\x1a\nimage", candidates)
+
+
+@pytest.mark.anyio
+async def test_missing_structured_output_is_provider_error(
+    candidates: list[RecognitionCandidate],
+) -> None:
+    provider = provider_with(FakeResponses(output=None))
+
+    with pytest.raises(RecognitionProviderError):
+        await provider.recognize(b"\xff\xd8\xffimage", candidates)

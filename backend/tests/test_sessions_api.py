@@ -11,10 +11,38 @@ from PIL import Image
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.sessions import get_mock_recognition_provider
+from app.api.sessions import get_recognition_provider
+from app.core.config import Settings, get_settings
 from app.domain.enums import RecognitionStatus
 from app.models.shopping import SessionProduct
 from app.providers.mock_recognition import MockRecognitionProvider
+from app.providers.recognition import (
+    RecognitionCandidate,
+    RecognitionDecision,
+    RecognitionProviderError,
+)
+
+
+class StaticRecognitionProvider:
+    def __init__(
+        self,
+        decision: RecognitionDecision | None = None,
+        error: RecognitionProviderError | None = None,
+    ) -> None:
+        self._decision = decision
+        self._error = error
+
+    async def recognize(
+        self,
+        image_bytes: bytes,
+        candidates: list[RecognitionCandidate],
+    ) -> RecognitionDecision:
+        del image_bytes, candidates
+        if self._error is not None:
+            raise self._error
+        if self._decision is None:
+            raise AssertionError("Static provider requires a decision")
+        return self._decision
 
 
 def create_session(client: TestClient) -> str:
@@ -150,7 +178,7 @@ def test_non_match_results_are_not_stored(
     recognition_status: RecognitionStatus,
     expected_body: dict[str, object],
 ) -> None:
-    test_app.dependency_overrides[get_mock_recognition_provider] = lambda: MockRecognitionProvider(
+    test_app.dependency_overrides[get_recognition_provider] = lambda: MockRecognitionProvider(
         status=recognition_status
     )
     session_id = create_session(client)
@@ -213,8 +241,142 @@ def test_provider_failure_is_mapped_to_contract_error(
     client: TestClient,
     test_app: FastAPI,
 ) -> None:
-    test_app.dependency_overrides[get_mock_recognition_provider] = lambda: MockRecognitionProvider(
+    test_app.dependency_overrides[get_recognition_provider] = lambda: MockRecognitionProvider(
         should_fail=True
+    )
+    session_id = create_session(client)
+
+    response = recognize(
+        client,
+        session_id,
+        captured_at=datetime(2026, 8, 15, 13, 35, tzinfo=UTC),
+    )
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "RECOGNITION_PROVIDER_ERROR"
+
+
+def test_common_provider_error_is_mapped_to_contract_error(
+    client: TestClient,
+    test_app: FastAPI,
+) -> None:
+    test_app.dependency_overrides[get_recognition_provider] = lambda: StaticRecognitionProvider(
+        error=RecognitionProviderError("timeout")
+    )
+    session_id = create_session(client)
+
+    response = recognize(
+        client,
+        session_id,
+        captured_at=datetime(2026, 8, 15, 13, 35, tzinfo=UTC),
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "error": {
+            "code": "RECOGNITION_PROVIDER_ERROR",
+            "message": "The recognition provider is temporarily unavailable.",
+        }
+    }
+
+
+@pytest.mark.parametrize(
+    "decision",
+    [
+        RecognitionDecision(
+            status=RecognitionStatus.MATCHED,
+            product_id="invented_product_id",
+        ),
+        RecognitionDecision(
+            status=RecognitionStatus.AMBIGUOUS,
+            candidate_product_ids=("mcm_001", "invented_product_id"),
+        ),
+    ],
+)
+def test_provider_ids_outside_catalog_allowlist_become_unknown(
+    client: TestClient,
+    test_app: FastAPI,
+    db_session: Session,
+    decision: RecognitionDecision,
+) -> None:
+    test_app.dependency_overrides[get_recognition_provider] = lambda: StaticRecognitionProvider(
+        decision=decision
+    )
+    session_id = create_session(client)
+
+    response = recognize(
+        client,
+        session_id,
+        captured_at=datetime(2026, 8, 15, 13, 35, tzinfo=UTC),
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"recognitionStatus": "UNKNOWN"}
+    assert db_session.scalar(select(func.count()).select_from(SessionProduct)) == 0
+
+
+def test_real_provider_shape_uses_same_matched_api_dto(
+    client: TestClient,
+    test_app: FastAPI,
+) -> None:
+    test_app.dependency_overrides[get_recognition_provider] = lambda: StaticRecognitionProvider(
+        decision=RecognitionDecision(
+            status=RecognitionStatus.MATCHED,
+            product_id="mcm_002",
+        )
+    )
+    session_id = create_session(client)
+
+    response = recognize(
+        client,
+        session_id,
+        captured_at=datetime(2026, 8, 15, 13, 35, tzinfo=UTC),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert set(body) == {"recognitionStatus", "isNew", "observedProduct"}
+    assert body["recognitionStatus"] == "MATCHED"
+    assert body["observedProduct"]["product"]["productId"] == "mcm_002"
+
+
+def test_valid_ambiguous_ids_are_filtered_and_deduplicated(
+    client: TestClient,
+    test_app: FastAPI,
+) -> None:
+    test_app.dependency_overrides[get_recognition_provider] = lambda: StaticRecognitionProvider(
+        decision=RecognitionDecision(
+            status=RecognitionStatus.AMBIGUOUS,
+            candidate_product_ids=(
+                "mcm_001",
+                "invented_product_id",
+                "mcm_001",
+                "mcm_002",
+            ),
+        )
+    )
+    session_id = create_session(client)
+
+    response = recognize(
+        client,
+        session_id,
+        captured_at=datetime(2026, 8, 15, 13, 35, tzinfo=UTC),
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "recognitionStatus": "AMBIGUOUS",
+        "candidateProductIds": ["mcm_001", "mcm_002"],
+    }
+
+
+def test_openai_mode_without_api_key_uses_provider_error_contract(
+    client: TestClient,
+    test_app: FastAPI,
+) -> None:
+    test_app.dependency_overrides[get_settings] = lambda: Settings(
+        recognition_provider="openai",
+        openai_api_key=None,
     )
     session_id = create_session(client)
 
