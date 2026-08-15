@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from io import BytesIO
 from uuid import UUID, uuid4
 
@@ -67,6 +68,7 @@ def test_mock_vertical_slice_and_duplicate_upsert(
 ) -> None:
     session_id = create_session(client)
     first_captured_at = datetime(2026, 8, 15, 13, 35, tzinfo=UTC)
+    second_captured_at = first_captured_at + timedelta(seconds=3)
 
     first_response = recognize(client, session_id, captured_at=first_captured_at)
 
@@ -97,7 +99,7 @@ def test_mock_vertical_slice_and_duplicate_upsert(
     second_response = recognize(
         client,
         session_id,
-        captured_at=first_captured_at + timedelta(seconds=3),
+        captured_at=second_captured_at,
         occupancy_ratio=0.4,
         dwell_ms=2000,
     )
@@ -107,12 +109,16 @@ def test_mock_vertical_slice_and_duplicate_upsert(
     observation = second_response.json()["observedProduct"]["observation"]
     assert observation["occupancyRatio"] == 0.4
     assert observation["dwellMs"] == 2000
+    assert observation["lastObservedAt"] == "2026-08-15T13:35:03Z"
 
     row_count = db_session.scalar(select(func.count()).select_from(SessionProduct))
     session_product = db_session.scalar(select(SessionProduct))
     assert row_count == 1
     assert session_product is not None
     assert session_product.observation_count == 2
+    assert session_product.max_occupancy_ratio == Decimal("0.4")
+    assert session_product.max_dwell_ms == 2000
+    assert session_product.last_observed_at.replace(tzinfo=UTC) == second_captured_at
 
     list_response = client.get(f"/api/v1/sessions/{session_id}/products")
     assert list_response.status_code == 200
