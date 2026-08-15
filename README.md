@@ -71,7 +71,7 @@ PostgreSQL
 - 로그인 / 회원가입
 - 고도화된 추천 모델
 
-## Stage 0 개발 환경
+## Backend 개발 환경
 
 필수 도구:
 
@@ -100,11 +100,26 @@ uv sync --locked
 
 ```bash
 .venv/bin/alembic upgrade head
+.venv/bin/python -m app.scripts.seed_products
 .venv/bin/uvicorn app.main:app --reload
 ```
 
 - Health: `http://127.0.0.1:8000/health`
 - Swagger UI: `http://127.0.0.1:8000/docs`
+
+## B1 Mock Vertical Slice
+
+기본 `MOCK_RECOGNITION_STATUS=MATCHED`에서는 업로드된 유효한 JPEG/PNG crop을
+`MOCK_RECOGNITION_PRODUCT_ID` 상품으로 인식한다. Android의 상태별 UI를 검증할 때는
+`backend/.env`에서 `MOCK_RECOGNITION_STATUS`를 `AMBIGUOUS` 또는 `UNKNOWN`으로 바꾸고
+서버를 재시작한다. 이 모드에서는 OpenAI API를 호출하지 않는다.
+
+구현된 API:
+
+- `POST /api/v1/sessions`
+- `POST /api/v1/sessions/{sessionId}/recognize`
+- `GET /api/v1/sessions/{sessionId}/products`
+- `POST /api/v1/sessions/{sessionId}/complete`
 
 검증 명령:
 
