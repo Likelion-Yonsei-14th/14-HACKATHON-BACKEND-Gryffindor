@@ -103,9 +103,9 @@ travel_plans
 ```json
 [
   {
-    "productId": "mcm_001",
+    "productId": "catalog_001",
     "sku": "SKU001",
-    "brand": "MCM",
+    "brand": "Example Brand",
     "name": "Product Name",
     "category": "bag",
     "imageUrl": "https://example.com/product.jpg",

@@ -43,6 +43,9 @@ OpenAI 요청에는 다음을 제공한다.
 4. 필요한 경우 reference image
 
 상품 수가 작을 때는 query image와 여러 reference image를 하나의 요청에 포함할 수 있다.
+`RecognitionCandidate.reference_image_url`이 있으면 Provider는 상품 ID label과 reference
+image를 함께 전달한다. 실제 API 흐름에서는 Catalog의 `Product.image_url`을 사용하고,
+local smoke test에서는 fixture JPEG을 Base64 data URL로 변환해 같은 필드에 제공한다.
 
 상품 수가 크게 증가하면 이 방식은 비용과 latency가 증가하므로 production-scale retrieval은 별도 설계 대상이다.
 
@@ -88,6 +91,9 @@ class RecognitionProvider(Protocol):
     ) -> RecognitionDecision:
         ...
 ```
+
+`RecognitionCandidate`의 `reference_image_url`은 optional 내부 필드며 `/api/v1` DTO에 노출하지
+않는다.
 
 구현:
 
@@ -139,6 +145,7 @@ RECOGNITION_MAX_CANDIDATES=
 
 - Mock Provider로 API contract 검증 가능
 - 실제 상품 crop을 보내 OpenAI Provider가 Catalog의 product_id를 반환
+- 로컬 reference fixture와 별도 촬영 query로 `MATCHED` 검증
 - Catalog 밖 이미지에서 UNKNOWN 처리 가능
 - 유사 상품 두 개를 구분하지 못할 때 AMBIGUOUS 처리 가능
 - product_id가 DB에 존재하는지 서버 재검증

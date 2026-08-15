@@ -59,8 +59,8 @@ MVP에서 가장 중요한 것은 "정확한 기능 수"보다 하나의 사용�
 
 별도 opt-in smoke test로 수행한다.
 
-- 등록 상품 reference/query
-- 미등록 상품
+- 로컬 Catalog reference와 별도 촬영 query → `MATCHED`
+- 상품과 무관한 query → `UNKNOWN`
 - 유사 상품 ambiguity
 - invalid structured result fallback
 

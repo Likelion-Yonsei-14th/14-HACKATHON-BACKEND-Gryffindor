@@ -143,13 +143,33 @@ OPENAI_TIMEOUT_SECONDS=20
 RECOGNITION_MAX_CANDIDATES=20
 ```
 
-실제 API smoke test도 opt-in이다. Catalog 상품 crop과 기대 결과를 명시한 경우에만
-아래처럼 실행한다.
+실제 API 흐름은 seed된 `Product.image_url`을 reference image URL로 사용한다.
+Catalog을 DB에 반영하려면 다음 seed command를 실행한다.
 
 ```bash
+cd backend
+.venv/bin/python -m app.scripts.seed_products
+```
+
+OpenAI smoke test는 DB를 사용하지 않고 `data/products.seed.json`과 아래 local fixture를
+직접 읽는 opt-in test다.
+
+```text
+backend/tests/fixtures/openai/
+├─ test_outer_001_ref.jpg
+├─ test_outer_002_ref.jpg
+├─ test_outer_003_ref.jpg
+└─ query/
+   ├─ test_outer_001_query.jpg
+   └─ unrelated.jpg
+```
+
+`test_outer_001_query.jpg`는 reference와 별도로 촬영한 같은 상품 이미지여야 하며,
+`unrelated.jpg`는 Catalog 상품과 무관한 JPEG이어야 한다. 실제 OpenAI 호출은 다음처럼
+명시적으로 opt-in한다.
+
+```bash
+cd backend
 RUN_OPENAI_RECOGNITION_SMOKE=1 \
-OPENAI_RECOGNITION_SMOKE_IMAGE=/absolute/path/to/crop.jpg \
-OPENAI_RECOGNITION_SMOKE_EXPECTED_STATUS=MATCHED \
-OPENAI_RECOGNITION_SMOKE_EXPECTED_PRODUCT_ID=mcm_001 \
-.venv/bin/python -m pytest -m openai_smoke
+.venv/bin/python -m pytest -m openai_smoke -v
 ```
