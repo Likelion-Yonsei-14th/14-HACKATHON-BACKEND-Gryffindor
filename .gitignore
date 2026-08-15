@@ -339,3 +339,7 @@ pyrightconfig.json
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/python,macos,visualstudiocode,jetbrains
+
+# custom
+backend/tests/fixtures/openai/*.jpg
+backend/tests/fixtures/openai/query/*.jpg

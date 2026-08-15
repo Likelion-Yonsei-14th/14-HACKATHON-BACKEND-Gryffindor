@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     )
     recognition_provider: Literal["mock", "openai"] = "mock"
     mock_recognition_status: Literal["MATCHED", "AMBIGUOUS", "UNKNOWN"] = "MATCHED"
-    mock_recognition_product_id: str | None = "mcm_001"
+    mock_recognition_product_id: str | None = "test_outer_001"
     recognition_max_image_bytes: int = Field(default=5 * 1024 * 1024, gt=0)
     recognition_max_candidates: int = Field(default=20, gt=0)
     openai_api_key: SecretStr | None = Field(default=None, repr=False)
