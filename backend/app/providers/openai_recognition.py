@@ -1,5 +1,7 @@
 import base64
 import json
+import logging
+from time import perf_counter
 
 from openai import AsyncOpenAI, OpenAIError
 from openai.types.responses import ResponseInputContentParam
@@ -11,6 +13,8 @@ from app.providers.recognition import (
     RecognitionDecision,
     RecognitionProviderError,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAIRecognitionOutput(BaseModel):
@@ -49,6 +53,14 @@ class OpenAIRecognitionProvider:
         if not candidates:
             return RecognitionDecision(status=RecognitionStatus.UNKNOWN)
 
+        total_started_at = perf_counter()
+        logger.info(
+            "OpenAI recognition start model=%s candidates=%d imageBytes=%d",
+            self._model,
+            len(candidates),
+            len(image_bytes),
+        )
+        prepare_started_at = perf_counter()
         media_type = _image_media_type(image_bytes)
         image_base64 = base64.b64encode(image_bytes).decode("ascii")
         catalog = [
@@ -74,28 +86,31 @@ class OpenAIRecognitionProvider:
                     {
                         "type": "input_image",
                         "image_url": candidate.reference_image_url,
-                        "detail": "high",
+                        "detail": "low",
                     },
                 ]
             )
         user_content: list[ResponseInputContentParam] = [
             {
                 "type": "input_text",
-                "text": "Allowed catalog:\n" + json.dumps(catalog, ensure_ascii=False),
+                "text": "Allowed catalog:\n"
+                + json.dumps(catalog, ensure_ascii=False, separators=(",", ":")),
             },
             *reference_content,
             {
                 "type": "input_text",
-                "text": "Query image to identify against the references:",
+                "text": "Query image:",
             },
             {
                 "type": "input_image",
                 "image_url": f"data:{media_type};base64,{image_base64}",
-                "detail": "high",
+                "detail": "low",
             },
         ]
+        prepare_ms = (perf_counter() - prepare_started_at) * 1000
 
         try:
+            api_call_started_at = perf_counter()
             response = await self._client.responses.parse(
                 model=self._model,
                 input=[
@@ -114,11 +129,24 @@ class OpenAIRecognitionProvider:
                     },
                 ],
                 text_format=OpenAIRecognitionOutput,
+                reasoning={"effort": "none"},
             )
+            api_call_ms = (perf_counter() - api_call_started_at) * 1000
+            parse_started_at = perf_counter()
             output = OpenAIRecognitionOutput.model_validate(response.output_parsed)
+            parse_ms = (perf_counter() - parse_started_at) * 1000
         except (OpenAIError, ValidationError) as exc:
             raise RecognitionProviderError("OpenAI recognition request failed") from exc
 
+        logger.info(
+            "OpenAI recognition completed elapsedMs=%.2f result=%s "
+            "prepareMs=%.2f apiCallMs=%.2f parseMs=%.2f",
+            (perf_counter() - total_started_at) * 1000,
+            output.status,
+            prepare_ms,
+            api_call_ms,
+            parse_ms,
+        )
         return RecognitionDecision(
             status=output.status,
             product_id=output.product_id,
@@ -134,12 +162,11 @@ def _image_media_type(image_bytes: bytes) -> str:
     raise RecognitionProviderError("Recognition input must be a JPEG or PNG image")
 
 
-_SYSTEM_PROMPT = """You identify the single product centered in a camera crop.
-Compare the labeled catalog reference images and metadata with the final query image, and return the
-required structured result using only the supplied allowed catalog.
-Use MATCHED only when exactly one catalog product is sufficiently identifiable, and set product_id
-to that allowed ID with an empty candidate_product_ids list. Use AMBIGUOUS when at least two allowed
-catalog products remain plausible, set product_id to null, and list only those allowed IDs. Use
-UNKNOWN for an unregistered product, a non-product image, or insufficient evidence, with product_id
-set to null and an empty candidate_product_ids list. Never invent an ID or product.
+_SYSTEM_PROMPT = """Identify the single centered product by comparing the query image with labeled
+catalog references and metadata. Return only the structured result using the allowed catalog.
+MATCHED: exactly one sufficiently identifiable product; product_id=its allowed ID;
+candidate_product_ids=[]. AMBIGUOUS: at least two allowed products remain plausible;
+product_id=null; candidate_product_ids=their allowed IDs. UNKNOWN: unregistered product,
+non-product, or insufficient evidence; product_id=null; candidate_product_ids=[]. Never invent a
+product or ID.
 """

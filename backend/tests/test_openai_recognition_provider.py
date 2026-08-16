@@ -1,3 +1,4 @@
+import logging
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -123,15 +124,17 @@ async def test_structured_results_map_to_common_decision(
     request = fake_responses.calls[0]
     assert request["model"] == "test-model"
     assert request["text_format"] is OpenAIRecognitionOutput
+    assert request["reasoning"] == {"effort": "none"}
     user_content = request["input"][1]["content"]
     assert user_content[0]["type"] == "input_text"
-    assert '"product_id": "catalog_001"' in user_content[0]["text"]
+    assert '"product_id":"catalog_001"' in user_content[0]["text"]
     image_content = [content for content in user_content if content["type"] == "input_image"]
     assert [content["image_url"] for content in image_content[:2]] == [
         "data:image/jpeg;base64,cmVmMQ==",
         "data:image/jpeg;base64,cmVmMg==",
     ]
     assert image_content[2]["image_url"].startswith("data:image/jpeg;base64,")
+    assert {content["detail"] for content in image_content} == {"low"}
 
 
 @pytest.mark.anyio
@@ -163,3 +166,36 @@ async def test_missing_structured_output_is_provider_error(
 
     with pytest.raises(RecognitionProviderError):
         await provider.recognize(b"\xff\xd8\xffimage", candidates)
+
+
+@pytest.mark.anyio
+async def test_success_logs_openai_latency(
+    candidates: list[RecognitionCandidate],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.INFO, logger="app.providers.openai_recognition")
+    provider = provider_with(
+        FakeResponses(
+            output=OpenAIRecognitionOutput(
+                status=RecognitionStatus.MATCHED,
+                product_id="catalog_001",
+                candidate_product_ids=[],
+            )
+        )
+    )
+
+    await provider.recognize(b"\xff\xd8\xffimage", candidates)
+
+    messages = [record.getMessage() for record in caplog.records]
+    assert any(message.startswith("OpenAI recognition start ") for message in messages)
+    completed = next(
+        message for message in messages if message.startswith("OpenAI recognition completed ")
+    )
+    for expected_part in (
+        "elapsedMs=",
+        "result=MATCHED",
+        "prepareMs=",
+        "apiCallMs=",
+        "parseMs=",
+    ):
+        assert expected_part in completed
