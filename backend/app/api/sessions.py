@@ -16,7 +16,10 @@ from app.models.product import Product
 from app.models.shopping import SessionProduct
 from app.providers.mock_recognition import MockRecognitionProvider
 from app.providers.openai_recognition import OpenAIRecognitionProvider
+from app.providers.openclip_embedding import OpenCLIPImageEmbedder
+from app.providers.openclip_recognition import OpenCLIPRecognitionProvider
 from app.providers.recognition import RecognitionProvider
+from app.repositories.product_embeddings import ProductEmbeddingRepository
 from app.schemas.api import (
     ErrorResponse,
     ObservationResponse,
@@ -30,7 +33,7 @@ from app.schemas.api import (
     SessionProductListResponse,
     SessionResponse,
 )
-from app.services.images import read_valid_image
+from app.services.images import read_valid_image, save_recognition_debug_image
 from app.services.pricing import PriceQuote
 from app.services.shopping import RecognitionResult, RecognitionService, ShoppingSessionService
 
@@ -47,7 +50,10 @@ def get_mock_recognition_provider(settings: AppSettings) -> MockRecognitionProvi
     )
 
 
-async def get_recognition_provider(settings: AppSettings) -> AsyncIterator[RecognitionProvider]:
+async def get_recognition_provider(
+    settings: AppSettings,
+    db: DbSession,
+) -> AsyncIterator[RecognitionProvider]:
     if settings.recognition_provider == "mock":
         yield get_mock_recognition_provider(settings)
         return
@@ -58,11 +64,26 @@ async def get_recognition_provider(settings: AppSettings) -> AsyncIterator[Recog
     if not api_key:
         raise _recognition_provider_unavailable()
 
-    provider = _get_openai_recognition_provider(
+    openai_provider = _get_openai_recognition_provider(
         api_key,
         settings.openai_vision_model,
         settings.openai_timeout_seconds,
     )
+    if settings.recognition_provider == "openai":
+        provider = openai_provider
+    else:
+        provider = OpenCLIPRecognitionProvider(
+            embedder=OpenCLIPImageEmbedder(
+                model_name=settings.openclip_model,
+                pretrained=settings.openclip_pretrained,
+                device=settings.openclip_device,
+                expected_dimension=settings.openclip_embedding_dimension,
+            ),
+            searcher=ProductEmbeddingRepository(db),
+            fallback=openai_provider,
+            match_threshold=settings.openclip_match_threshold,
+            margin_threshold=settings.openclip_margin_threshold,
+        )
     try:
         yield provider
     finally:
@@ -154,6 +175,28 @@ async def recognize_product(
     response.headers["X-Request-ID"] = request_id
     image_bytes = await read_valid_image(image, settings.recognition_max_image_bytes)
     normalized_captured_at = _as_utc(captured_at)
+    if settings.recognition_debug_save_images:
+        try:
+            saved_image_path = await save_recognition_debug_image(
+                image_bytes,
+                directory=settings.recognition_debug_image_dir,
+                session_id=session_id,
+                captured_at=normalized_captured_at,
+            )
+        except Exception:
+            logger.warning(
+                "recognition_debug_image_save_failed request_id=%s session_id=%s",
+                request_id,
+                session_id,
+                exc_info=True,
+            )
+        else:
+            logger.info(
+                "recognition_debug_image_saved request_id=%s session_id=%s path=%s",
+                request_id,
+                session_id,
+                saved_image_path,
+            )
     recognition_started_at = perf_counter()
     result = await RecognitionService(
         db,
@@ -186,6 +229,22 @@ async def recognize_product(
         recognition_latency_ms,
         (perf_counter() - request_started_at) * 1000,
     )
+    if result.telemetry is not None:
+        logger.info(
+            "recognition_fast_path request_id=%s provider=%s embeddingGenerationMs=%s "
+            "vectorSearchMs=%s fastPathTotalMs=%s top1Similarity=%s top2Similarity=%s "
+            "margin=%s fastPathMatched=%s openaiFallback=%s",
+            request_id,
+            result.telemetry.provider,
+            _metric(result.telemetry.embedding_generation_ms),
+            _metric(result.telemetry.vector_search_ms),
+            _metric(result.telemetry.fast_path_total_ms),
+            _metric(result.telemetry.top1_similarity),
+            _metric(result.telemetry.top2_similarity),
+            _metric(result.telemetry.similarity_margin),
+            result.telemetry.fast_path_matched,
+            result.telemetry.openai_fallback,
+        )
     return api_response
 
 
@@ -278,6 +337,10 @@ def _as_utc(value: datetime) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
         return value.replace(tzinfo=UTC)
     return value.astimezone(UTC)
+
+
+def _metric(value: float | None) -> str:
+    return "none" if value is None else f"{value:.4f}"
 
 
 def _recognition_provider_unavailable() -> AppError:
