@@ -1,5 +1,7 @@
+import logging
 from io import BytesIO
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from httpx2 import Response
@@ -30,9 +32,16 @@ def _android_jpeg_crop() -> bytes:
     return buffer.getvalue()
 
 
-def _recognize_from_android(client: TestClient, session_id: str) -> Response:
+def _recognize_from_android(
+    client: TestClient,
+    session_id: str,
+    *,
+    request_id: str | None = None,
+) -> Response:
+    headers = {"X-Request-ID": request_id} if request_id is not None else None
     return client.post(
         f"/api/v1/sessions/{session_id}/recognize",
+        headers=headers,
         files={"image": ("gen2-crop.jpg", _android_jpeg_crop(), "image/jpeg")},
         data={
             "capturedAt": "2026-08-16T12:34:56.789Z",
@@ -90,6 +99,43 @@ def test_android_matched_request_and_duplicate_upsert(
     session_product = db_session.scalar(select(SessionProduct))
     assert session_product is not None
     assert session_product.observation_count == 2
+
+
+def test_android_request_has_correlated_recognition_log(
+    client: TestClient,
+    test_app: FastAPI,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    _use_mock_status(test_app, RecognitionStatus.MATCHED)
+    session_id = _create_session(client)
+    request_id = "android-e2e-request-001"
+
+    with caplog.at_level(logging.INFO, logger="app.api.sessions"):
+        response = _recognize_from_android(client, session_id, request_id=request_id)
+
+    assert response.status_code == 200
+    assert response.headers["X-Request-ID"] == request_id
+    recognition_logs = [
+        record.getMessage()
+        for record in caplog.records
+        if record.getMessage().startswith("recognition_completed ")
+    ]
+    assert len(recognition_logs) == 1
+    message = recognition_logs[0]
+    expected_fields = [
+        f"request_id={request_id}",
+        f"session_id={session_id}",
+        f"image_bytes={len(_android_jpeg_crop())}",
+        "provider=MockRecognitionProvider",
+        "trigger_type=OCCUPANCY_AND_DWELL",
+        "occupancy_ratio=0.2400",
+        "dwell_ms=1500",
+        "recognition_status=MATCHED",
+        "product_id=test_outer_001",
+        "recognition_latency_ms=",
+        "total_latency_ms=",
+    ]
+    assert all(field in message for field in expected_fields)
 
 
 def test_android_unknown_request_does_not_store_session_product(

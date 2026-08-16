@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -33,6 +35,7 @@ async def request_validation_error_handler(_: Request, exc: Exception) -> JSONRe
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    logging.getLogger("app").setLevel(settings.log_level)
     application = FastAPI(
         title=settings.app_name,
         version="0.1.0",

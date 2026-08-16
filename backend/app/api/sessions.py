@@ -1,9 +1,11 @@
+import logging
 from datetime import UTC, datetime
 from functools import lru_cache
+from time import perf_counter
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, File, Form, Path, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Path, Request, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
@@ -33,6 +35,7 @@ from app.services.pricing import PriceQuote
 from app.services.shopping import RecognitionResult, RecognitionService, ShoppingSessionService
 
 router = APIRouter(prefix="/api/v1", tags=["shopping"])
+logger = logging.getLogger(__name__)
 DbSession = Annotated[Session, Depends(get_db_session)]
 AppSettings = Annotated[Settings, Depends(get_settings)]
 
@@ -133,14 +136,21 @@ async def recognize_product(
     trigger_type: Annotated[TriggerType, Form(alias="triggerType")],
     occupancy_ratio: Annotated[float, Form(alias="occupancyRatio", ge=0, le=1)],
     dwell_ms: Annotated[int, Form(alias="dwellMs", ge=0)],
+    request: Request,
+    response: Response,
     db: DbSession,
     settings: AppSettings,
     provider: RecognitionProviderDependency,
     tracking_id: Annotated[str | None, Form(alias="trackingId")] = None,
 ) -> RecognitionResponse:
     del tracking_id
+    request_started_at = perf_counter()
+    supplied_request_id = (request.headers.get("X-Request-ID") or "").strip()
+    request_id = supplied_request_id if 0 < len(supplied_request_id) <= 128 else uuid4().hex
+    response.headers["X-Request-ID"] = request_id
     image_bytes = await read_valid_image(image, settings.recognition_max_image_bytes)
     normalized_captured_at = _as_utc(captured_at)
+    recognition_started_at = perf_counter()
     result = await RecognitionService(
         db,
         provider,
@@ -153,7 +163,26 @@ async def recognize_product(
         occupancy_ratio=occupancy_ratio,
         dwell_ms=dwell_ms,
     )
-    return _recognition_response(result)
+    recognition_latency_ms = (perf_counter() - recognition_started_at) * 1000
+    api_response = _recognition_response(result)
+    product_id = result.product.product_id if result.product is not None else None
+    logger.info(
+        "recognition_completed request_id=%s session_id=%s image_bytes=%d provider=%s "
+        "trigger_type=%s occupancy_ratio=%.4f dwell_ms=%d recognition_status=%s "
+        "product_id=%s recognition_latency_ms=%.2f total_latency_ms=%.2f",
+        request_id,
+        session_id,
+        len(image_bytes),
+        type(provider).__name__,
+        trigger_type,
+        occupancy_ratio,
+        dwell_ms,
+        result.status,
+        product_id,
+        recognition_latency_ms,
+        (perf_counter() - request_started_at) * 1000,
+    )
+    return api_response
 
 
 @router.get(
