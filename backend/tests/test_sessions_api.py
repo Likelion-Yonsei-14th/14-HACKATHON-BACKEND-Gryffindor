@@ -59,6 +59,12 @@ def jpeg_bytes() -> bytes:
     return buffer.getvalue()
 
 
+def png_bytes() -> bytes:
+    buffer = BytesIO()
+    Image.new("RGB", (2, 2), color="white").save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
 def recognize(
     client: TestClient,
     session_id: str,
@@ -236,7 +242,82 @@ def test_invalid_image_is_rejected(client: TestClient) -> None:
     )
 
     assert response.status_code == 400
-    assert response.json()["error"]["code"] == "INVALID_IMAGE"
+    assert response.json() == {
+        "error": {
+            "code": "INVALID_IMAGE",
+            "message": "A valid JPEG or PNG image is required.",
+        }
+    }
+
+
+@pytest.mark.parametrize(
+    ("filename", "content_type", "content"),
+    [
+        ("crop.jpg", "image/jpeg", jpeg_bytes()),
+        ("crop.png", "image/png", png_bytes()),
+    ],
+)
+def test_recognition_accepts_supported_image_formats(
+    client: TestClient,
+    filename: str,
+    content_type: str,
+    content: bytes,
+) -> None:
+    session_id = create_session(client)
+
+    response = client.post(
+        f"/api/v1/sessions/{session_id}/recognize",
+        files={"image": (filename, content, content_type)},
+        data={
+            "capturedAt": "2026-08-16T12:00:00Z",
+            "triggerType": "OCCUPANCY_AND_DWELL",
+            "occupancyRatio": "0.24",
+            "dwellMs": "1500",
+            "trackingId": "android-track-1",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["recognitionStatus"] == "MATCHED"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("occupancyRatio", "-0.01"),
+        ("occupancyRatio", "1.01"),
+        ("dwellMs", "-1"),
+        ("triggerType", "CENTER"),
+        ("capturedAt", "not-an-iso-8601-timestamp"),
+    ],
+)
+def test_invalid_recognition_metadata_uses_error_contract(
+    client: TestClient,
+    field: str,
+    value: str,
+) -> None:
+    session_id = create_session(client)
+    data = {
+        "capturedAt": "2026-08-16T12:00:00Z",
+        "triggerType": "OCCUPANCY_AND_DWELL",
+        "occupancyRatio": "0.24",
+        "dwellMs": "1500",
+    }
+    data[field] = value
+
+    response = client.post(
+        f"/api/v1/sessions/{session_id}/recognize",
+        files={"image": ("crop.jpg", jpeg_bytes(), "image/jpeg")},
+        data=data,
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "error": {
+            "code": "INVALID_REQUEST",
+            "message": "The request payload is invalid.",
+        }
+    }
 
 
 def test_provider_failure_is_mapped_to_contract_error(

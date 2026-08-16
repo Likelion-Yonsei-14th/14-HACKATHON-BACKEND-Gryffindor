@@ -304,6 +304,7 @@ Response:
 
 권장 error code:
 
+- `INVALID_REQUEST`
 - `SESSION_NOT_FOUND`
 - `SESSION_NOT_ACTIVE`
 - `INVALID_IMAGE`

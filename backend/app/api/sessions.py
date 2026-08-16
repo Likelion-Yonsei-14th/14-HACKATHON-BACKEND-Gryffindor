@@ -122,6 +122,7 @@ def complete_session(
         400: {"model": ErrorResponse},
         404: {"model": ErrorResponse},
         409: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
         503: {"model": ErrorResponse},
     },
 )

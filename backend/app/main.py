@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.api.health import router as health_router
@@ -16,6 +17,20 @@ async def app_error_handler(_: Request, exc: Exception) -> JSONResponse:
     )
 
 
+async def request_validation_error_handler(_: Request, exc: Exception) -> JSONResponse:
+    if not isinstance(exc, RequestValidationError):
+        raise exc
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": {
+                "code": "INVALID_REQUEST",
+                "message": "The request payload is invalid.",
+            }
+        },
+    )
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     application = FastAPI(
@@ -24,6 +39,7 @@ def create_app() -> FastAPI:
         description="Smart-glasses shopping support backend API",
     )
     application.add_exception_handler(AppError, app_error_handler)
+    application.add_exception_handler(RequestValidationError, request_validation_error_handler)
     application.include_router(health_router)
     application.include_router(sessions_router)
     return application
