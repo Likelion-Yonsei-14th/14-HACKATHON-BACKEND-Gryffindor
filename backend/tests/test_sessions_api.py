@@ -173,7 +173,7 @@ def test_mock_vertical_slice_and_duplicate_upsert(
             RecognitionStatus.AMBIGUOUS,
             {
                 "recognitionStatus": "AMBIGUOUS",
-                "candidateProductIds": ["test_outer_001", "test_outer_002"],
+                "candidateProductIds": ["demo_lotion_001", "demo_mouse_001"],
             },
         ),
         (RecognitionStatus.UNKNOWN, {"recognitionStatus": "UNKNOWN"}),
@@ -423,7 +423,7 @@ def test_real_provider_shape_uses_same_matched_api_dto(
     assert body["observedProduct"]["product"]["productId"] == "test_outer_002"
 
 
-def test_catalog_image_urls_are_passed_as_reference_images(
+def test_a4_demo_products_are_the_three_candidate_allowlist_with_reference_images(
     client: TestClient,
     test_app: FastAPI,
 ) -> None:
@@ -431,6 +431,7 @@ def test_catalog_image_urls_are_passed_as_reference_images(
         decision=RecognitionDecision(status=RecognitionStatus.UNKNOWN)
     )
     test_app.dependency_overrides[get_recognition_provider] = lambda: provider
+    test_app.dependency_overrides[get_settings] = lambda: Settings(recognition_max_candidates=3)
     session_id = create_session(client)
 
     response = recognize(
@@ -440,10 +441,18 @@ def test_catalog_image_urls_are_passed_as_reference_images(
     )
 
     assert response.status_code == 200
+    assert [candidate.product_id for candidate in provider.candidates] == [
+        "demo_lotion_001",
+        "demo_mouse_001",
+        "demo_perfume_001",
+    ]
     assert [candidate.reference_image_url for candidate in provider.candidates] == [
-        "https://example.com/products/test_outer_001.jpg",
-        "https://example.com/products/test_outer_002.jpg",
-        "https://example.com/products/test_outer_003.jpg",
+        "https://image.oliveyoung.co.kr/cfimages/cf-goods/uploads/images/thumbnails/10/"
+        "0000/0022/A00000022655337ko.jpg?l=ko",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/"
+        "Logitech_M185_mouse_HS05.jpg/960px-Logitech_M185_mouse_HS05.jpg",
+        "https://img.kingpowerclick.com/cdn-cgi/image/format=auto/kingpower-com/image/"
+        "upload/w_640/v1753241145/prod/1008697-L1.jpg",
     ]
 
 

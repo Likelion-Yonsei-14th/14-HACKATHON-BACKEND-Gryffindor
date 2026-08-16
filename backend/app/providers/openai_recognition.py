@@ -31,10 +31,15 @@ class OpenAIRecognitionProvider:
         client: AsyncOpenAI | None = None,
     ) -> None:
         self._model = model
+        self._owns_client = client is None
         self._client = client or AsyncOpenAI(
             api_key=api_key,
             timeout=timeout_seconds,
         )
+
+    async def close(self) -> None:
+        if self._owns_client:
+            await self._client.close()
 
     async def recognize(
         self,

@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import TypedDict, cast
 
@@ -21,7 +22,11 @@ class SeedProduct(TypedDict):
 
 
 _FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "openai"
-_REFERENCE_PRODUCT_IDS = ("test_outer_001", "test_outer_002", "test_outer_003")
+_REFERENCE_PRODUCT_IDS = (
+    "demo_lotion_001",
+    "demo_mouse_001",
+    "demo_perfume_001",
+)
 
 
 pytestmark = [
@@ -59,22 +64,39 @@ def _provider_and_candidates() -> tuple[OpenAIRecognitionProvider, list[Recognit
     return provider, candidates
 
 
+@pytest.fixture
+async def openai_provider_and_candidates(
+    anyio_backend: object,
+) -> AsyncIterator[tuple[OpenAIRecognitionProvider, list[RecognitionCandidate]]]:
+    provider_and_candidates = _provider_and_candidates()
+    try:
+        yield provider_and_candidates
+    finally:
+        await provider_and_candidates[0].close()
+
+
 @pytest.mark.anyio
-async def test_real_openai_matches_query_against_local_references() -> None:
-    provider, candidates = _provider_and_candidates()
+@pytest.mark.parametrize("product_id", _REFERENCE_PRODUCT_IDS)
+async def test_real_openai_matches_a4_demo_catalog(
+    product_id: str,
+    openai_provider_and_candidates: tuple[OpenAIRecognitionProvider, list[RecognitionCandidate]],
+) -> None:
+    provider, candidates = openai_provider_and_candidates
 
     decision = await provider.recognize(
-        _jpeg_bytes(_FIXTURE_ROOT / "query" / "test_outer_001_query.jpg"),
+        _jpeg_bytes(_FIXTURE_ROOT / "query" / f"{product_id}_query.jpg"),
         candidates,
     )
 
     assert decision.status is RecognitionStatus.MATCHED
-    assert decision.product_id == "test_outer_001"
+    assert decision.product_id == product_id
 
 
 @pytest.mark.anyio
-async def test_real_openai_returns_unknown_for_unrelated_query() -> None:
-    provider, candidates = _provider_and_candidates()
+async def test_real_openai_returns_unknown_for_unrelated_query(
+    openai_provider_and_candidates: tuple[OpenAIRecognitionProvider, list[RecognitionCandidate]],
+) -> None:
+    provider, candidates = openai_provider_and_candidates
 
     decision = await provider.recognize(
         _jpeg_bytes(_FIXTURE_ROOT / "query" / "unrelated.jpg"),

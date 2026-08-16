@@ -46,5 +46,54 @@
       "source": "musinsa",
       "musinsaProductId": "4347271"
     }
+  },
+  {
+    "productId": "demo_mouse_001",
+    "sku": "DEMO-LOGITECH-M185-GRAY",
+    "brand": "Logitech",
+    "name": "M185 무선 마우스 (그레이)",
+    "category": "mouse",
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Logitech_M185_mouse_HS05.jpg/960px-Logitech_M185_mouse_HS05.jpg",
+    "retailPriceKrw": 25000,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true,
+      "a4Demo": true,
+      "recognitionTest": true,
+      "source": "wikimedia-commons",
+      "license": "CC-BY-4.0"
+    }
+  },
+  {
+    "productId": "demo_perfume_001",
+    "sku": "DEMO-DIPTYQUE-PAPIER-100",
+    "brand": "Diptyque",
+    "name": "로 파피에 오 드 뚜왈렛 100ml",
+    "category": "perfume",
+    "imageUrl": "https://img.kingpowerclick.com/cdn-cgi/image/format=auto/kingpower-com/image/upload/w_640/v1753241145/prod/1008697-L1.jpg",
+    "retailPriceKrw": 235000,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true,
+      "a4Demo": true,
+      "recognitionTest": true,
+      "source": "kingpower"
+    }
+  },
+  {
+    "productId": "demo_lotion_001",
+    "sku": "DEMO-BRINGGREEN-TEATREE-CICA-100",
+    "brand": "BRINGGREEN",
+    "name": "티트리 시카 수딩 크림 100ml",
+    "category": "lotion",
+    "imageUrl": "https://image.oliveyoung.co.kr/cfimages/cf-goods/uploads/images/thumbnails/10/0000/0022/A00000022655337ko.jpg?l=ko",
+    "retailPriceKrw": 16000,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true,
+      "a4Demo": true,
+      "recognitionTest": true,
+      "source": "oliveyoung"
+    }
   }
 ]

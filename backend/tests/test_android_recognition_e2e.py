@@ -80,7 +80,7 @@ def test_android_matched_request_and_duplicate_upsert(
     assert first_body["recognitionStatus"] == "MATCHED"
     assert first_body["isNew"] is True
     observed_product = first_body["observedProduct"]
-    assert observed_product["product"]["productId"] == "test_outer_001"
+    assert observed_product["product"]["productId"] == "demo_lotion_001"
     assert observed_product["pricing"]
     assert observed_product["observation"] == {
         "triggerType": "OCCUPANCY_AND_DWELL",
@@ -131,7 +131,7 @@ def test_android_request_has_correlated_recognition_log(
         "occupancy_ratio=0.2400",
         "dwell_ms=1500",
         "recognition_status=MATCHED",
-        "product_id=test_outer_001",
+        "product_id=demo_lotion_001",
         "recognition_latency_ms=",
         "total_latency_ms=",
     ]
@@ -166,6 +166,6 @@ def test_android_ambiguous_request_returns_candidates_without_storage(
     assert response.status_code == 200
     assert response.json() == {
         "recognitionStatus": "AMBIGUOUS",
-        "candidateProductIds": ["test_outer_001", "test_outer_002"],
+        "candidateProductIds": ["demo_lotion_001", "demo_mouse_001"],
     }
     assert _session_product_count(db_session) == 0

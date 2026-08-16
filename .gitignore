@@ -342,4 +342,6 @@ pyrightconfig.json
 
 # custom
 backend/tests/fixtures/openai/*.jpg
+backend/tests/fixtures/openai/*.jpeg
 backend/tests/fixtures/openai/query/*.jpg
+backend/tests/fixtures/openai/query/*.jpeg

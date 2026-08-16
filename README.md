@@ -152,26 +152,66 @@ cd backend
 ```
 
 OpenAI smoke test는 DB를 사용하지 않고 `data/products.seed.json`과 아래 local fixture를
-직접 읽는 opt-in test다.
+직접 읽는 opt-in test다. Fixture JPEG은 촬영 원본의 EXIF를 제거하고 긴 변을 최대
+1024px로 줄여 둔다.
 
 ```text
 backend/tests/fixtures/openai/
-├─ test_outer_001_ref.jpg
-├─ test_outer_002_ref.jpg
-├─ test_outer_003_ref.jpg
+├─ demo_lotion_001_ref.jpg
+├─ demo_mouse_001_ref.jpg
+├─ demo_perfume_001_ref.jpg
 └─ query/
-   ├─ test_outer_001_query.jpg
+   ├─ demo_lotion_001_query.jpg
+   ├─ demo_mouse_001_query.jpg
+   ├─ demo_perfume_001_query.jpg
    └─ unrelated.jpg
 ```
 
-`test_outer_001_query.jpg`는 reference와 별도로 촬영한 같은 상품 이미지여야 하며,
-`unrelated.jpg`는 Catalog 상품과 무관한 JPEG이어야 한다. 실제 OpenAI 호출은 다음처럼
-명시적으로 opt-in한다.
+각 `*_query.jpg`는 같은 상품의 `*_ref.jpg`와 다른 각도에서 촬영한 이미지여야 한다.
+`unrelated.jpg`는 Catalog 상품과 무관한 JPEG이어야 한다. A4 상품 3개의 MATCHED만 먼저
+검증할 때는 다음처럼 실제 OpenAI 호출을 명시적으로 opt-in한다.
 
 ```bash
 cd backend
 RUN_OPENAI_RECOGNITION_SMOKE=1 \
-.venv/bin/python -m pytest -m openai_smoke -v
+.venv/bin/python -m pytest tests/test_openai_recognition_smoke.py \
+  -k a4_demo_catalog -v
+```
+
+### A4 Demo Recognition Catalog
+
+기존 mock 상품은 유지하고 다음 세 상품을 `data/products.seed.json`에 추가한다.
+
+```text
+demo_lotion_001   BRINGGREEN 티트리 시카 수딩 크림 100ml
+demo_mouse_001    Logitech M185 무선 마우스 (그레이)
+demo_perfume_001  Diptyque 로 파피에 오 드 뚜왈렛 100ml
+```
+
+Seed는 `productId` 기준 upsert이므로 기존 DB를 지우지 않고 반복 실행할 수 있다.
+
+```bash
+cd backend
+.venv/bin/python -m app.scripts.seed_products
+```
+
+실제 `/recognize` E2E에서는 DB의 `Product.image_url`을 OpenAI reference image URL로
+사용한다. A4에서는 HTTPS로 접근 가능한 JPEG URL을 seed에 넣었으며, Real Provider 실행
+시 정렬상 앞의 demo 상품 3개만 allowlist로 사용하도록 `backend/.env`를 설정한다.
+
+```bash
+RECOGNITION_PROVIDER=openai
+OPENAI_API_KEY=...
+OPENAI_VISION_MODEL=gpt-5-mini
+OPENAI_TIMEOUT_SECONDS=20
+RECOGNITION_MAX_CANDIDATES=3
+```
+
+DB 반영 결과는 다음 명령으로 확인한다.
+
+```bash
+docker compose exec postgres psql -U postgres -d gryffindor \
+  -c "SELECT product_id, brand, name FROM products WHERE product_id LIKE 'demo_%' ORDER BY product_id;"
 ```
 
 ## B3 Android 실기기 연결

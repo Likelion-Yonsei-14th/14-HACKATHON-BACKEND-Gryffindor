@@ -1,6 +1,6 @@
 import logging
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
-from functools import lru_cache
 from time import perf_counter
 from typing import Annotated
 from uuid import UUID, uuid4
@@ -47,9 +47,10 @@ def get_mock_recognition_provider(settings: AppSettings) -> MockRecognitionProvi
     )
 
 
-def get_recognition_provider(settings: AppSettings) -> RecognitionProvider:
+async def get_recognition_provider(settings: AppSettings) -> AsyncIterator[RecognitionProvider]:
     if settings.recognition_provider == "mock":
-        return get_mock_recognition_provider(settings)
+        yield get_mock_recognition_provider(settings)
+        return
 
     if settings.openai_api_key is None:
         raise _recognition_provider_unavailable()
@@ -57,14 +58,17 @@ def get_recognition_provider(settings: AppSettings) -> RecognitionProvider:
     if not api_key:
         raise _recognition_provider_unavailable()
 
-    return _get_openai_recognition_provider(
+    provider = _get_openai_recognition_provider(
         api_key,
         settings.openai_vision_model,
         settings.openai_timeout_seconds,
     )
+    try:
+        yield provider
+    finally:
+        await provider.close()
 
 
-@lru_cache
 def _get_openai_recognition_provider(
     api_key: str,
     model: str,
