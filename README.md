@@ -173,3 +173,41 @@ cd backend
 RUN_OPENAI_RECOGNITION_SMOKE=1 \
 .venv/bin/python -m pytest -m openai_smoke -v
 ```
+
+## B3 Android 실기기 연결
+
+기본 실행 명령은 개발 PC의 localhost에만 bind된다. Android 실기기와 개발 PC를 같은
+신뢰된 LAN에 연결한 뒤, 실기기 테스트가 필요할 때만 다음처럼 LAN interface에서도
+요청을 받는다.
+
+```bash
+cd backend
+.venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+`0.0.0.0`은 서버의 listen 주소이며 Android Base URL로 사용할 수 없다. Android 개발
+build의 `API_BASE_URL`에는 개발 PC의 실제 LAN IP를 넣고 Retrofit에서 사용할 수 있도록
+마지막 `/`를 유지한다.
+
+```text
+API_BASE_URL=http://<개발-PC-LAN-IP>:8000/
+```
+
+실기기에서 먼저 다음 두 요청을 확인한다.
+
+```text
+GET  http://<개발-PC-LAN-IP>:8000/health
+POST http://<개발-PC-LAN-IP>:8000/api/v1/sessions
+Content-Type: application/json
+
+{"currency":"CNY"}
+```
+
+Health는 `200 {"status":"ok"}`, Session 생성은 `201`과 `sessionId`를 반환해야 한다.
+Native Android Retrofit/OkHttp 요청에는 CORS 설정이 필요하지 않다. 개발 build에서 HTTP를
+사용한다면 Android의 cleartext 허용도 개발 환경에만 한정하고, 배포 환경은 HTTPS Base
+URL을 사용한다.
+
+이 bind 방식은 신뢰된 개발 LAN에서만 사용한다. 라우터 port forwarding을 설정하거나
+방화벽을 무조건 개방해 인터넷에 직접 노출하지 않는다. 외부 네트워크에서 검증해야 한다면
+인증서와 접근 제어가 적용된 기존 HTTPS 배포 주소를 사용한다.
