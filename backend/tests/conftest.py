@@ -34,7 +34,7 @@ def db_session() -> Generator[Session, None, None]:
 
 @pytest.fixture
 def test_app(db_session: Session) -> Generator[FastAPI, None, None]:
-    application = create_app()
+    application = create_app(enable_exchange_rate_startup=False)
     test_settings = Settings(
         app_env="test",
         database_url="sqlite+pysqlite://",
