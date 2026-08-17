@@ -22,7 +22,31 @@
 
 ---
 
-## 3. Shopping Session
+## 3. Store Catalog
+
+### `GET /api/v1/stores`
+
+Response `200`:
+
+```json
+{
+  "stores": [
+    {
+      "id": "10000000-0000-0000-0000-000000000001",
+      "name": "MCM Seoul",
+      "brand": "MCM",
+      "country": "KR",
+      "city": "Seoul",
+      "type": "CITY",
+      "airportCode": null
+    }
+  ]
+}
+```
+
+---
+
+## 4. Shopping Session
 
 ### `POST /api/v1/sessions`
 
@@ -30,12 +54,15 @@ Request:
 
 ```json
 {
-  "currency": "CNY"
+  "currency": "CNY",
+  "storeId": "10000000-0000-0000-0000-000000000001"
 }
 ```
 
 `currency`는 사용자가 선택한 국가의 통화이며 미국은 `USD`, 중국은 `CNY`를 사용한다.
 Android는 가격 응답에 함께 포함되는 KRW 금액과 이 대상 통화 금액을 상단 토글로 전환한다.
+`storeId`는 `GET /api/v1/stores`에서 조회한 매장 UUID이며 필수다.
+존재하지 않는 UUID를 보내면 `404 STORE_NOT_FOUND`를 반환한다.
 
 Response `201`:
 
@@ -44,6 +71,7 @@ Response `201`:
   "sessionId": "uuid",
   "status": "ACTIVE",
   "currency": "CNY",
+  "storeId": "10000000-0000-0000-0000-000000000001",
   "startedAt": "2026-08-15T13:30:00Z"
 }
 ```
@@ -62,7 +90,7 @@ Response:
 
 ---
 
-## 4. Recognition + Observation
+## 5. Recognition + Observation
 
 ### `POST /api/v1/sessions/{sessionId}/recognize`
 
@@ -138,7 +166,7 @@ Backend는 `occupancyRatio`를 다시 CV로 계산하지 않는다. 범위 valid
 
 ---
 
-## 5. Session Product List
+## 6. Session Product List
 
 ### `GET /api/v1/sessions/{sessionId}/products`
 
@@ -190,7 +218,7 @@ Response:
 
 ---
 
-## 6. Shopping Review
+## 7. Shopping Review
 
 ### `PUT /api/v1/sessions/{sessionId}/review`
 
@@ -219,7 +247,7 @@ Response:
 
 ---
 
-## 7. Travel Plan
+## 8. Travel Plan
 
 ### `PUT /api/v1/sessions/{sessionId}/travel`
 
@@ -245,7 +273,7 @@ Response:
 
 ---
 
-## 8. Refund Checklist
+## 9. Refund Checklist
 
 ### `GET /api/v1/sessions/{sessionId}/refund-checklist`
 
@@ -269,7 +297,7 @@ Response:
 
 ---
 
-## 9. Airport Recommendation
+## 10. Airport Recommendation
 
 ### `GET /api/v1/sessions/{sessionId}/recommendations`
 
@@ -312,7 +340,7 @@ Response:
 
 ---
 
-## 10. Common Errors
+## 11. Common Errors
 
 ```json
 {
@@ -327,6 +355,7 @@ Response:
 
 - `INVALID_REQUEST`
 - `SESSION_NOT_FOUND`
+- `STORE_NOT_FOUND`
 - `SESSION_NOT_ACTIVE`
 - `INVALID_IMAGE`
 - `RECOGNITION_PROVIDER_ERROR`

@@ -4,10 +4,11 @@
 
 MVP에서는 사용자 계정 없이 `ShoppingSession`을 aggregate root로 사용한다.
 
-최소 테이블은 다음 네 개다.
+최소 테이블은 다음 다섯 개다.
 
 ```text
 products
+stores
 shopping_sessions
 session_products
 travel_plans
@@ -34,6 +35,9 @@ products
 - updated_at TIMESTAMPTZ
 ```
 
+`20260817_0006` 적용 시 기존 session row는 demo `MCM Seoul`로 backfill한 뒤
+`store_id`를 `NOT NULL`로 전환한다.
+
 `instant_refund_eligible`를 product의 영구 속성으로 단정하지 않는다. 최종 여부는 RefundPolicyProvider에서 현재 정책/조건을 이용해 계산한다.
 
 MVP Mock Mode에서는 metadata에 테스트용 조건을 둘 수 있다.
@@ -41,11 +45,28 @@ MVP Mock Mode에서는 metadata에 테스트용 조건을 둘 수 있다.
 `price_krw`와 `estimated_refund_krw`는 seed/product 데이터의 미리 계산된 KRW 고정값이다.
 예상 환급 후 가격은 `price_krw - estimated_refund_krw`로 계산하며 중복 저장하지 않는다.
 
-## 3. shopping_sessions
+## 3. stores
+
+```text
+stores
+- id UUID / PK
+- name VARCHAR
+- brand VARCHAR
+- country VARCHAR
+- city VARCHAR
+- type VARCHAR
+- airport_code VARCHAR NULL
+```
+
+`type`은 현재 demo에서 `CITY`, `AIRPORT`를 사용한다. 공항 매장은 `airport_code`를
+사용하며 일반 매장은 `NULL`일 수 있다.
+
+## 4. shopping_sessions
 
 ```text
 shopping_sessions
 - id UUID / PK
+- store_id UUID / FK / NOT NULL
 - status ENUM(ACTIVE, COMPLETED)
 - currency CHAR(3)
 - started_at TIMESTAMPTZ
@@ -54,7 +75,7 @@ shopping_sessions
 - updated_at TIMESTAMPTZ
 ```
 
-## 4. session_products
+## 5. session_products
 
 한 세션에서 한 상품은 한 row만 가진다.
 
@@ -85,7 +106,7 @@ UNIQUE(session_id, product_id)
 - `last_trigger_type`
 - `observation_count`
 
-## 5. travel_plans
+## 6. travel_plans
 
 ```text
 travel_plans
@@ -98,9 +119,15 @@ travel_plans
 - updated_at TIMESTAMPTZ
 ```
 
-## 6. Product Seed
+## 7. Demo Seed
 
-시연 상품은 `data/products.seed.json` 형태로 관리하고 seed command로 DB에 입력한다.
+Demo 매장은 `data/stores.seed.json`, 시연 상품은 `data/products.seed.json` 형태로
+관리하고 각각의 seed command로 DB에 입력한다.
+
+Store seed에는 Android E2E용 `MCM Seoul`, `MCM New York`, `MCM Airport Store`를
+포함한다.
+
+### Product Seed
 
 예:
 
@@ -120,7 +147,7 @@ travel_plans
 ]
 ```
 
-## 7. Airport Catalog
+## 8. Airport Catalog
 
 P0에서는 별도 테이블을 만들지 않아도 된다.
 
