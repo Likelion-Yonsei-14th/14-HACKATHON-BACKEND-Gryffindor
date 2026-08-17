@@ -26,7 +26,8 @@ products
 - name VARCHAR
 - category VARCHAR
 - image_url TEXT
-- retail_price_krw BIGINT
+- price_krw BIGINT
+- estimated_refund_krw BIGINT
 - tax_refund_supported BOOLEAN
 - metadata JSONB
 - created_at TIMESTAMPTZ
@@ -36,6 +37,9 @@ products
 `instant_refund_eligible`를 product의 영구 속성으로 단정하지 않는다. 최종 여부는 RefundPolicyProvider에서 현재 정책/조건을 이용해 계산한다.
 
 MVP Mock Mode에서는 metadata에 테스트용 조건을 둘 수 있다.
+
+`price_krw`와 `estimated_refund_krw`는 seed/product 데이터의 미리 계산된 KRW 고정값이다.
+예상 환급 후 가격은 `price_krw - estimated_refund_krw`로 계산하며 중복 저장하지 않는다.
 
 ## 3. shopping_sessions
 
@@ -109,7 +113,8 @@ travel_plans
     "name": "Product Name",
     "category": "bag",
     "imageUrl": "https://example.com/product.jpg",
-    "retailPriceKrw": 1090000,
+    "priceKrw": 1090000,
+    "estimatedRefundKrw": 76000,
     "taxRefundSupported": true
   }
 ]

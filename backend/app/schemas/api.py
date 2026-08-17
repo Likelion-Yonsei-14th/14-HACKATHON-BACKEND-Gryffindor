@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
 from app.domain.enums import PurchaseState, RecognitionStatus, SessionStatus, TriggerType
@@ -14,7 +14,7 @@ class ApiModel(BaseModel):
 
 
 class SessionCreateRequest(ApiModel):
-    currency: str = Field(min_length=3, max_length=3, pattern=r"^[A-Z]{3}$")
+    currency: Literal["USD", "CNY"]
 
 
 class SessionResponse(ApiModel):
@@ -43,7 +43,10 @@ class PriceQuoteResponse(ApiModel):
     retail_price_krw: int
     estimated_refund_krw: int
     estimated_refund_price_krw: int
-    converted_amount: Decimal
+    converted_retail_price: Decimal | None
+    converted_estimated_refund: Decimal | None
+    converted_estimated_refund_price: Decimal | None
+    converted_amount: Decimal | None
     converted_currency: str
     instant_refund_eligible: bool
     pricing_mode: Literal["MOCK"] = "MOCK"

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 
 from app.models.product import Product
+from app.services.exchange_rates import ExchangeRateService, ExchangeRateUnavailableError
 
 
 @dataclass(frozen=True, slots=True)
@@ -9,35 +10,45 @@ class PriceQuote:
     retail_price_krw: int
     estimated_refund_krw: int
     estimated_refund_price_krw: int
-    converted_amount: Decimal
+    converted_retail_price: Decimal | None
+    converted_estimated_refund: Decimal | None
+    converted_estimated_refund_price: Decimal | None
+    converted_amount: Decimal | None
     converted_currency: str
     instant_refund_eligible: bool
 
 
-class MockPricingService:
-    _REFUND_RATE = Decimal("0.055")
+class PricingService:
     _INSTANT_REFUND_LIMIT_KRW = 5_000_000
-    _FX_RATES = {
-        "CNY": Decimal("0.00505859"),
-        "USD": Decimal("0.00072718"),
-        "JPY": Decimal("0.10791"),
-        "EUR": Decimal("0.000625"),
-    }
+
+    def __init__(self, exchange_rates: ExchangeRateService) -> None:
+        self._exchange_rates = exchange_rates
 
     def quote(self, product: Product, currency: str) -> PriceQuote:
-        estimated_refund_krw = self._estimated_refund(product)
+        estimated_refund_krw = product.estimated_refund_krw
         estimated_refund_price_krw = product.retail_price_krw - estimated_refund_krw
-        fx_rate = self._FX_RATES.get(currency, Decimal("1"))
-        converted_amount = (Decimal(estimated_refund_price_krw) * fx_rate).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP,
-        )
+        try:
+            fx_rate = self._exchange_rates.get_cached_rate(currency).rate
+        except ExchangeRateUnavailableError:
+            converted_retail_price = None
+            converted_estimated_refund = None
+            converted_estimated_refund_price = None
+        else:
+            converted_retail_price = _convert(product.retail_price_krw, fx_rate)
+            converted_estimated_refund = _convert(estimated_refund_krw, fx_rate)
+            converted_estimated_refund_price = _convert(
+                estimated_refund_price_krw,
+                fx_rate,
+            )
 
         return PriceQuote(
             retail_price_krw=product.retail_price_krw,
             estimated_refund_krw=estimated_refund_krw,
             estimated_refund_price_krw=estimated_refund_price_krw,
-            converted_amount=converted_amount,
+            converted_retail_price=converted_retail_price,
+            converted_estimated_refund=converted_estimated_refund,
+            converted_estimated_refund_price=converted_estimated_refund_price,
+            converted_amount=converted_estimated_refund_price,
             converted_currency=currency,
             instant_refund_eligible=(
                 product.tax_refund_supported
@@ -45,11 +56,9 @@ class MockPricingService:
             ),
         )
 
-    def _estimated_refund(self, product: Product) -> int:
-        if not product.tax_refund_supported:
-            return 0
 
-        refund_in_thousands = (
-            Decimal(product.retail_price_krw) * self._REFUND_RATE / Decimal(1000)
-        ).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-        return int(refund_in_thousands * 1000)
+def _convert(amount_krw: int, rate: Decimal) -> Decimal:
+    return (Decimal(amount_krw) * rate).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )

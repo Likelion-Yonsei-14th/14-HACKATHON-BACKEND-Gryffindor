@@ -18,7 +18,8 @@ from app.providers.recognition import (
 )
 from app.repositories.products import ProductRepository
 from app.repositories.shopping import SessionProductRepository, ShoppingSessionRepository
-from app.services.pricing import MockPricingService, PriceQuote
+from app.services.exchange_rates import ExchangeRateService
+from app.services.pricing import PriceQuote, PricingService
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,7 +38,7 @@ class ShoppingSessionService:
         self._db = db
         self._sessions = ShoppingSessionRepository(db)
         self._session_products = SessionProductRepository(db)
-        self._pricing = MockPricingService()
+        self._pricing = PricingService(ExchangeRateService(db))
 
     def create(self, currency: str) -> ShoppingSession:
         shopping_session = self._sessions.add(ShoppingSession(currency=currency))
@@ -71,12 +72,12 @@ class RecognitionService:
         self,
         db: Session,
         provider: RecognitionProvider,
-        pricing: MockPricingService | None = None,
+        pricing: PricingService | None = None,
         candidate_limit: int = 20,
     ) -> None:
         self._db = db
         self._provider = provider
-        self._pricing = pricing or MockPricingService()
+        self._pricing = pricing or PricingService(ExchangeRateService(db))
         self._candidate_limit = candidate_limit
         self._sessions = ShoppingSessionRepository(db)
         self._products = ProductRepository(db)

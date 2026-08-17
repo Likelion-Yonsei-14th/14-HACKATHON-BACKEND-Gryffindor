@@ -29,7 +29,7 @@ class ExchangeRateService:
     def __init__(
         self,
         db: Session,
-        provider: ExchangeRateProvider,
+        provider: ExchangeRateProvider | None = None,
         *,
         now: Callable[[], datetime] = utc_now,
     ) -> None:
@@ -52,19 +52,40 @@ class ExchangeRateService:
 
     def get_rate(self, target_currency: str) -> CurrencyRate:
         normalized_currency = target_currency.upper()
-        if normalized_currency not in TARGET_CURRENCIES:
-            raise UnsupportedCurrencyError("Only USD and CNY exchange rates are supported.")
+        _validate_target_currency(normalized_currency)
         return next(
             rate
             for rate in self.get_rates()
             if rate.target_currency == normalized_currency
         )
 
+    def get_cached_rate(self, target_currency: str) -> CurrencyRate:
+        """Read a cached rate without refreshing it through the external provider."""
+        normalized_currency = target_currency.upper()
+        _validate_target_currency(normalized_currency)
+        cached_rate = next(
+            (
+                rate
+                for rate in self._rates.list_supported()
+                if rate.target_currency == normalized_currency
+            ),
+            None,
+        )
+        if cached_rate is None:
+            raise ExchangeRateUnavailableError(
+                f"The cached KRW/{normalized_currency} exchange rate is unavailable."
+            )
+        return cached_rate
+
     def _refresh_or_fallback(
         self,
         cached_rates: list[CurrencyRate],
         checked_at: datetime,
     ) -> tuple[CurrencyRate, CurrencyRate]:
+        if self._provider is None:
+            raise ExchangeRateUnavailableError(
+                "An exchange-rate provider is required to refresh the cache."
+            )
         try:
             fetched_rates = self._provider.fetch_rates()
         except ExchangeRateProviderError as exc:
@@ -113,3 +134,8 @@ def _as_utc(value: datetime) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
         return value.replace(tzinfo=UTC)
     return value.astimezone(UTC)
+
+
+def _validate_target_currency(target_currency: str) -> None:
+    if target_currency not in TARGET_CURRENCIES:
+        raise UnsupportedCurrencyError("Only USD and CNY exchange rates are supported.")

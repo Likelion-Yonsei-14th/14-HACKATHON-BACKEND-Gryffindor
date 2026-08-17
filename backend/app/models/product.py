@@ -32,8 +32,16 @@ class Product(Base):
     __tablename__ = "products"
     __table_args__ = (
         CheckConstraint(
-            "retail_price_krw >= 0",
-            name="ck_products_retail_price_nonnegative",
+            "price_krw >= 0",
+            name="ck_products_price_nonnegative",
+        ),
+        CheckConstraint(
+            "estimated_refund_krw >= 0",
+            name="ck_products_estimated_refund_nonnegative",
+        ),
+        CheckConstraint(
+            "estimated_refund_krw <= price_krw",
+            name="ck_products_estimated_refund_not_above_price",
         ),
     )
 
@@ -44,7 +52,9 @@ class Product(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     category: Mapped[str] = mapped_column(String(120), nullable=False)
     image_url: Mapped[str] = mapped_column(Text, nullable=False)
-    retail_price_krw: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    # Keep the Python attribute/API terminology stable while storing the policy name in DB.
+    retail_price_krw: Mapped[int] = mapped_column("price_krw", BigInteger, nullable=False)
+    estimated_refund_krw: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     tax_refund_supported: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     metadata_json: Mapped[dict[str, object]] = mapped_column(
         "metadata",

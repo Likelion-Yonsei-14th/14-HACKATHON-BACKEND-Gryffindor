@@ -9,12 +9,13 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from httpx2 import Response
 from PIL import Image
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.api.sessions import get_recognition_provider
 from app.core.config import Settings, get_settings
 from app.domain.enums import RecognitionStatus
+from app.models.currency_rate import CurrencyRate
 from app.models.shopping import SessionProduct
 from app.providers.mock_recognition import MockRecognitionProvider
 from app.providers.recognition import (
@@ -210,6 +211,9 @@ def test_mock_vertical_slice_and_duplicate_upsert(
         "retailPriceKrw": 159_000,
         "estimatedRefundKrw": 0,
         "estimatedRefundPriceKrw": 159_000,
+        "convertedRetailPrice": "804.32",
+        "convertedEstimatedRefund": "0.00",
+        "convertedEstimatedRefundPrice": "804.32",
         "convertedAmount": "804.32",
         "convertedCurrency": "CNY",
         "instantRefundEligible": False,
@@ -248,6 +252,79 @@ def test_mock_vertical_slice_and_duplicate_upsert(
     assert list_body["items"][0]["product"]["productId"] == "test_outer_001"
     assert list_body["items"][0]["purchaseState"] == "UNSET"
     assert list_body["items"][0]["interested"] is False
+
+
+def test_usd_session_returns_both_krw_and_usd_amounts(client: TestClient) -> None:
+    create_response = client.post("/api/v1/sessions", json={"currency": "USD"})
+    session_id = str(create_response.json()["sessionId"])
+
+    response = recognize(
+        client,
+        session_id,
+        captured_at=datetime(2026, 8, 15, 13, 35, tzinfo=UTC),
+    )
+
+    assert response.status_code == 200
+    pricing = response.json()["observedProduct"]["pricing"]
+    assert pricing["retailPriceKrw"] == 159_000
+    assert pricing["convertedRetailPrice"] == "115.62"
+    assert pricing["convertedEstimatedRefund"] == "0.00"
+    assert pricing["convertedEstimatedRefundPrice"] == "115.62"
+    assert pricing["convertedAmount"] == pricing["convertedEstimatedRefundPrice"]
+    assert pricing["convertedCurrency"] == "USD"
+
+
+@pytest.mark.parametrize("currency", ["KRW", "EUR", "JPY", "usd"])
+def test_session_rejects_unsupported_target_currency(
+    client: TestClient,
+    currency: str,
+) -> None:
+    response = client.post("/api/v1/sessions", json={"currency": currency})
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "INVALID_REQUEST"
+
+
+def test_recognition_succeeds_with_krw_prices_when_rate_cache_is_missing(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    session_id = create_session(client)
+    db_session.execute(delete(CurrencyRate))
+    db_session.commit()
+
+    response = recognize(
+        client,
+        session_id,
+        captured_at=datetime(2026, 8, 15, 13, 35, tzinfo=UTC),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["recognitionStatus"] == "MATCHED"
+    assert body["isNew"] is True
+    pricing = body["observedProduct"]["pricing"]
+    assert pricing == {
+        "retailPriceKrw": 159_000,
+        "estimatedRefundKrw": 0,
+        "estimatedRefundPriceKrw": 159_000,
+        "convertedCurrency": "CNY",
+        "instantRefundEligible": False,
+        "pricingMode": "MOCK",
+    }
+    assert db_session.scalar(select(func.count()).select_from(SessionProduct)) == 1
+
+    list_response = client.get(f"/api/v1/sessions/{session_id}/products")
+    assert list_response.status_code == 200
+    list_pricing = list_response.json()["items"][0]["pricing"]
+    assert list_pricing["retailPriceKrw"] == 159_000
+    assert list_pricing["estimatedRefundKrw"] == 0
+    assert list_pricing["estimatedRefundPriceKrw"] == 159_000
+    assert list_pricing["convertedRetailPrice"] is None
+    assert list_pricing["convertedEstimatedRefund"] is None
+    assert list_pricing["convertedEstimatedRefundPrice"] is None
+    assert list_pricing["convertedAmount"] is None
+    assert list_pricing["convertedCurrency"] == "CNY"
 
 
 @pytest.mark.parametrize(
@@ -638,4 +715,17 @@ def test_openapi_exposes_b1_contract(client: TestClient) -> None:
         "isNew",
         "observedProduct",
         "candidateProductIds",
+    }
+    pricing_schema = document["components"]["schemas"]["PriceQuoteResponse"]
+    assert set(pricing_schema["properties"]) == {
+        "retailPriceKrw",
+        "estimatedRefundKrw",
+        "estimatedRefundPriceKrw",
+        "convertedRetailPrice",
+        "convertedEstimatedRefund",
+        "convertedEstimatedRefundPrice",
+        "convertedAmount",
+        "convertedCurrency",
+        "instantRefundEligible",
+        "pricingMode",
     }

@@ -6,7 +6,8 @@
     "name": "워시드 포켓 유틸리티 자켓 (데님 블루)",
     "category": "jacket",
     "imageUrl": "https://example.com/products/test_outer_001.jpg",
-    "retailPriceKrw": 159000,
+    "priceKrw": 159000,
+    "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
       "demo": true,
@@ -22,7 +23,8 @@
     "name": "Test Outer 02",
     "category": "jacket",
     "imageUrl": "https://example.com/products/test_outer_002.jpg",
-    "retailPriceKrw": 100000,
+    "priceKrw": 100000,
+    "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
       "demo": true,
@@ -38,7 +40,8 @@
     "name": "빈티지 워크 자켓_차콜",
     "category": "jacket",
     "imageUrl": "https://example.com/products/test_outer_003.jpg",
-    "retailPriceKrw": 129000,
+    "priceKrw": 129000,
+    "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
       "demo": true,
@@ -54,7 +57,8 @@
     "name": "M185 무선 마우스 (그레이)",
     "category": "mouse",
     "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Logitech_M185_mouse_HS05.jpg/960px-Logitech_M185_mouse_HS05.jpg",
-    "retailPriceKrw": 25000,
+    "priceKrw": 25000,
+    "estimatedRefundKrw": 1000,
     "taxRefundSupported": true,
     "metadata": {
       "demo": true,
@@ -71,7 +75,8 @@
     "name": "로 파피에 오 드 뚜왈렛 100ml",
     "category": "perfume",
     "imageUrl": "https://img.kingpowerclick.com/cdn-cgi/image/format=auto/kingpower-com/image/upload/w_640/v1753241145/prod/1008697-L1.jpg",
-    "retailPriceKrw": 235000,
+    "priceKrw": 235000,
+    "estimatedRefundKrw": 13000,
     "taxRefundSupported": true,
     "metadata": {
       "demo": true,
@@ -87,7 +92,8 @@
     "name": "티트리 시카 수딩 크림 100ml",
     "category": "lotion",
     "imageUrl": "https://image.oliveyoung.co.kr/cfimages/cf-goods/uploads/images/thumbnails/10/0000/0022/A00000022655337ko.jpg?l=ko",
-    "retailPriceKrw": 16000,
+    "priceKrw": 16000,
+    "estimatedRefundKrw": 1000,
     "taxRefundSupported": true,
     "metadata": {
       "demo": true,

@@ -66,8 +66,9 @@ MVP에서는 실제 eye tracking이나 손으로 제품을 들었는지 판정�
 - `name`
 - `category`
 - `image_url`
-- `retail_price_krw`
-- 환급 계산에 필요한 최소 metadata
+- `price_krw`
+- `estimated_refund_krw`
+- 환급 지원 여부 등 최소 metadata
 
 MVP Catalog는 시연용으로 선정한 소수 상품을 대상으로 한다.
 

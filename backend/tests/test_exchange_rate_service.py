@@ -2,7 +2,7 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models.currency_rate import CurrencyRate
@@ -40,6 +40,12 @@ class FakeExchangeRateProvider:
     ) -> None:
         self._unavailable = False
         self._responses.append(response)
+
+
+@pytest.fixture(autouse=True)
+def empty_exchange_rate_cache(db_session: Session) -> None:
+    db_session.execute(delete(CurrencyRate))
+    db_session.commit()
 
 
 def _pair(
@@ -171,4 +177,31 @@ def test_service_rejects_unsupported_currency_before_fetch(db_session: Session) 
     with pytest.raises(UnsupportedCurrencyError):
         service.get_rate("JPY")
 
+    assert provider.calls == 0
+
+
+def test_cached_rate_does_not_call_provider_or_refresh_stale_cache(
+    db_session: Session,
+) -> None:
+    cached_at = datetime(2026, 8, 16, tzinfo=UTC)
+    provider = FakeExchangeRateProvider([_pair(rate_date=date(2026, 8, 17))])
+    db_session.add(
+        CurrencyRate(
+            base_currency="KRW",
+            target_currency="USD",
+            rate=Decimal("0.00070"),
+            rate_date=cached_at.date(),
+            last_checked_at=cached_at,
+        )
+    )
+    db_session.commit()
+    service = ExchangeRateService(
+        db_session,
+        provider,
+        now=lambda: datetime(2026, 8, 17, tzinfo=UTC),
+    )
+
+    cached_rate = service.get_cached_rate("usd")
+
+    assert cached_rate.rate == Decimal("0.000700000000")
     assert provider.calls == 0

@@ -1,4 +1,6 @@
 from collections.abc import Generator
+from datetime import UTC, date, datetime
+from decimal import Decimal
 
 import pytest
 from fastapi import FastAPI
@@ -11,6 +13,7 @@ from app.core.config import Settings, get_settings
 from app.db.base import Base
 from app.db.session import get_db_session
 from app.main import create_app
+from app.models.currency_rate import CurrencyRate
 from app.scripts.seed_products import seed_products
 
 
@@ -26,6 +29,25 @@ def db_session() -> Generator[Session, None, None]:
 
     with testing_session() as session:
         seed_products(session)
+        session.add_all(
+            [
+                CurrencyRate(
+                    base_currency="KRW",
+                    target_currency="USD",
+                    rate=Decimal("0.00072718"),
+                    rate_date=date(2026, 8, 17),
+                    last_checked_at=datetime(2026, 8, 17, tzinfo=UTC),
+                ),
+                CurrencyRate(
+                    base_currency="KRW",
+                    target_currency="CNY",
+                    rate=Decimal("0.00505859"),
+                    rate_date=date(2026, 8, 17),
+                    last_checked_at=datetime(2026, 8, 17, tzinfo=UTC),
+                ),
+            ]
+        )
+        session.commit()
         yield session
 
     Base.metadata.drop_all(engine)

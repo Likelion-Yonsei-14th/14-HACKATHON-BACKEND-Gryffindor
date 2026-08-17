@@ -34,6 +34,9 @@ Request:
 }
 ```
 
+`currency`는 사용자가 선택한 국가의 통화이며 미국은 `USD`, 중국은 `CNY`를 사용한다.
+Android는 가격 응답에 함께 포함되는 KRW 금액과 이 대상 통화 금액을 상단 토글로 전환한다.
+
 Response `201`:
 
 ```json
@@ -93,9 +96,12 @@ Backend는 `occupancyRatio`를 다시 CV로 계산하지 않는다. 범위 valid
     },
     "pricing": {
       "retailPriceKrw": 1090000,
-      "estimatedRefundKrw": 60000,
-      "estimatedRefundPriceKrw": 1030000,
-      "convertedAmount": "5210.35",
+      "estimatedRefundKrw": 76000,
+      "estimatedRefundPriceKrw": 1014000,
+      "convertedRetailPrice": "5513.86",
+      "convertedEstimatedRefund": "384.45",
+      "convertedEstimatedRefundPrice": "5129.41",
+      "convertedAmount": "5129.41",
       "convertedCurrency": "CNY",
       "instantRefundEligible": true,
       "pricingMode": "MOCK"
@@ -153,9 +159,12 @@ Response:
       },
       "pricing": {
         "retailPriceKrw": 1090000,
-        "estimatedRefundKrw": 60000,
-        "estimatedRefundPriceKrw": 1030000,
-        "convertedAmount": "5210.35",
+        "estimatedRefundKrw": 76000,
+        "estimatedRefundPriceKrw": 1014000,
+        "convertedRetailPrice": "5513.86",
+        "convertedEstimatedRefund": "384.45",
+        "convertedEstimatedRefundPrice": "5129.41",
+        "convertedAmount": "5129.41",
         "convertedCurrency": "CNY",
         "instantRefundEligible": true,
         "pricingMode": "MOCK"
@@ -166,6 +175,18 @@ Response:
   ]
 }
 ```
+
+가격 응답 규칙:
+
+- `retailPriceKrw`, `estimatedRefundKrw`는 상품 DB의 KRW 고정값이다.
+- `estimatedRefundPriceKrw`는 두 고정값의 차이며 별도 DB 컬럼으로 저장하지 않는다.
+- `convertedRetailPrice`, `convertedEstimatedRefund`, `convertedEstimatedRefundPrice`는 세션의
+  `currency`와 `ExchangeRateService`의 DB 캐시 환율로 계산한 Decimal 문자열이다.
+- 기존 Android 호환성을 위해 `convertedAmount`는 `convertedEstimatedRefundPrice`와 같은 값을 유지한다.
+- 상품 API 요청은 외부 환율 API를 호출하지 않는다.
+- 환율 캐시가 없더라도 KRW 가격과 recognition 결과는 정상 반환한다.
+  `convertedRetailPrice`, `convertedEstimatedRefund`, `convertedEstimatedRefundPrice`,
+  `convertedAmount`만 `null` 또는 미제공될 수 있으며 `convertedCurrency`는 선택 통화를 유지한다.
 
 ---
 
