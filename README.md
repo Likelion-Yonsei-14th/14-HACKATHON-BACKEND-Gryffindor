@@ -86,12 +86,13 @@ LAN IP가 바뀌면 Android `BACKEND_BASE_URL`도 변경한다. `0.0.0.0`은 bin
 
 ```bash
 curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/api/v1/stores
 curl -X POST http://127.0.0.1:8000/api/v1/sessions \
   -H 'Content-Type: application/json' \
-  -d '{"currency":"KRW"}'
+  -d '{"currency":"CNY","storeId":"10000000-0000-0000-0000-000000000001"}'
 ```
 
-정상 결과는 health `200`, session 생성 `201`이다.
+정상 결과는 health `200`, store 목록 `200`, session 생성 `201`이다.
 
 ## Provider 전환
 
@@ -130,6 +131,7 @@ cd backend
 ## 핵심 API
 
 - `GET /health`
+- `GET /api/v1/stores`
 - `POST /api/v1/sessions`
 - `POST /api/v1/sessions/{sessionId}/recognize`
 - `GET /api/v1/sessions/{sessionId}/products`

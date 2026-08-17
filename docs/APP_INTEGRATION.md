@@ -133,6 +133,7 @@ else:
 ### Home
 
 ```text
+GET  /stores
 POST /sessions
 ```
 
@@ -168,6 +169,7 @@ GET /sessions/{id}/recommendations
 App은 최소 다음 실패를 처리한다.
 
 - network timeout
+- selected store not found
 - recognition unknown
 - recognition ambiguous
 - provider temporary error
@@ -193,19 +195,21 @@ API Key는 App config에 존재하지 않는다.
 ## 11. B3 E2E 검증 절차
 
 1. Android에서 `GET /health`를 호출해 `200`과 `{"status":"ok"}`를 확인한다.
-2. `POST /api/v1/sessions`에 `{"currency":"CNY"}`를 보내 `201`과 `sessionId`를 받는다.
-3. Android fixture JPEG을 위 multipart 형태로 `/recognize`에 보내 `MATCHED` 응답을
+2. `GET /api/v1/stores`를 호출해 demo 매장 목록과 선택한 `storeId`를 얻는다.
+3. `POST /api/v1/sessions`에 `{"currency":"CNY","storeId":"<선택한 UUID>"}`를
+   보내 `201`과 `sessionId`를 받는다.
+4. Android fixture JPEG을 위 multipart 형태로 `/recognize`에 보내 `MATCHED` 응답을
    확인한다.
-4. Gen2 camera에서 `SSD detection → attention gating → bbox crop → JPEG → /recognize`
+5. Gen2 camera에서 `SSD detection → attention gating → bbox crop → JPEG → /recognize`
    전체 producer 흐름을 확인한다.
-5. 실제 Catalog 상품으로 OpenAI recognition을 실행해 `MATCHED → productId → pricing →
+6. 실제 Catalog 상품으로 OpenAI recognition을 실행해 `MATCHED → productId → pricing →
    Android Product Card` 표시까지 확인한다.
-6. Catalog와 무관한 이미지를 보내 `UNKNOWN`이며 상품이 추가되지 않는지 확인한다.
-7. 구분하기 어려운 Catalog 상품 이미지를 보내 `AMBIGUOUS`와 `candidateProductIds`를
+7. Catalog와 무관한 이미지를 보내 `UNKNOWN`이며 상품이 추가되지 않는지 확인한다.
+8. 구분하기 어려운 Catalog 상품 이미지를 보내 `AMBIGUOUS`와 `candidateProductIds`를
    확인하고 상품이 추가되지 않는지 확인한다.
-8. 같은 상품을 같은 session에서 다시 인식해 `isNew=false`이며 DB의
+9. 같은 상품을 같은 session에서 다시 인식해 `isNew=false`이며 DB의
    `(session_id, product_id)` row가 하나뿐인지 확인한다.
 
-1~3과 Mock Provider 기반 6~8 상태/중복 검증은 automated test로 수행할 수 있다. 4~5의
-Gen2 촬영과 Android UI 표시, 실제 OpenAI를 사용하는 6~7 결과 품질은 실기기 smoke
+1~4와 Mock Provider 기반 7~9 상태/중복 검증은 automated test로 수행할 수 있다. 5~6의
+Gen2 촬영과 Android UI 표시, 실제 OpenAI를 사용하는 7~8 결과 품질은 실기기 smoke
 test로 최종 확인한다.
