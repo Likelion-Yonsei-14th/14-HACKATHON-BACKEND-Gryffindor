@@ -1,4 +1,8 @@
+import asyncio
+from datetime import UTC, datetime
 from io import BytesIO
+from pathlib import Path
+from uuid import UUID, uuid4
 
 from fastapi import UploadFile
 from PIL import Image, UnidentifiedImageError
@@ -26,6 +30,36 @@ async def read_valid_image(image: UploadFile, max_bytes: int) -> bytes:
         raise _invalid_image() from exc
 
     return image_bytes
+
+
+async def save_recognition_debug_image(
+    image_bytes: bytes,
+    *,
+    directory: Path,
+    session_id: UUID,
+    captured_at: datetime,
+) -> Path:
+    return await asyncio.to_thread(
+        _save_recognition_debug_image,
+        image_bytes,
+        directory,
+        session_id,
+        captured_at,
+    )
+
+
+def _save_recognition_debug_image(
+    image_bytes: bytes,
+    directory: Path,
+    session_id: UUID,
+    captured_at: datetime,
+) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    timestamp = captured_at.astimezone(UTC).strftime("%Y%m%dT%H%M%S_%fZ")
+    suffix = ".jpg" if image_bytes.startswith(b"\xff\xd8\xff") else ".png"
+    image_path = directory / f"{timestamp}_{session_id}_{uuid4().hex[:8]}{suffix}"
+    image_path.write_bytes(image_bytes)
+    return image_path
 
 
 def _invalid_image() -> AppError:

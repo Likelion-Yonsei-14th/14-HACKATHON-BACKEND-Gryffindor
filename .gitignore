@@ -153,6 +153,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Local recognition debug artifacts
+backend/artifacts/recognition_crops/
+
 # C extensions
 *.so
 

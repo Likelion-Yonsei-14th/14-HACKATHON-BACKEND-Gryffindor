@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pytest import MonkeyPatch
 
 from app.core.config import Settings
@@ -28,3 +30,17 @@ def test_openai_recognition_settings_can_be_overridden(monkeypatch: MonkeyPatch)
     assert settings.openai_vision_model == "test-vision-model"
     assert settings.openai_timeout_seconds == 7.5
     assert settings.recognition_max_candidates == 8
+
+
+def test_recognition_debug_image_settings_can_be_overridden(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    debug_directory = tmp_path / "recognition-crops"
+    monkeypatch.setenv("RECOGNITION_DEBUG_SAVE_IMAGES", "true")
+    monkeypatch.setenv("RECOGNITION_DEBUG_IMAGE_DIR", str(debug_directory))
+
+    settings = Settings()
+
+    assert settings.recognition_debug_save_images is True
+    assert settings.recognition_debug_image_dir == debug_directory

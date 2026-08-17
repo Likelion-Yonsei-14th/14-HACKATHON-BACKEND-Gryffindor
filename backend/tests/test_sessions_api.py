@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from io import BytesIO
+from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
@@ -47,6 +48,26 @@ class StaticRecognitionProvider:
         return self._decision
 
 
+class DebugImageCheckingProvider:
+    def __init__(self, directory: Path, expected_image_bytes: bytes) -> None:
+        self._directory = directory
+        self._expected_image_bytes = expected_image_bytes
+        self.saved_image_path: Path | None = None
+
+    async def recognize(
+        self,
+        image_bytes: bytes,
+        candidates: list[RecognitionCandidate],
+    ) -> RecognitionDecision:
+        del candidates
+        saved_images = list(self._directory.iterdir())
+        assert len(saved_images) == 1
+        self.saved_image_path = saved_images[0]
+        assert self.saved_image_path.read_bytes() == self._expected_image_bytes
+        assert image_bytes == self._expected_image_bytes
+        return RecognitionDecision(status=RecognitionStatus.UNKNOWN)
+
+
 def create_session(client: TestClient) -> str:
     response = client.post("/api/v1/sessions", json={"currency": "CNY"})
     assert response.status_code == 201
@@ -72,10 +93,17 @@ def recognize(
     captured_at: datetime,
     occupancy_ratio: float = 0.24,
     dwell_ms: int = 1500,
+    image_bytes: bytes | None = None,
 ) -> Response:
     return client.post(
         f"/api/v1/sessions/{session_id}/recognize",
-        files={"image": ("crop.jpg", jpeg_bytes(), "image/jpeg")},
+        files={
+            "image": (
+                "crop.jpg",
+                image_bytes if image_bytes is not None else jpeg_bytes(),
+                "image/jpeg",
+            )
+        },
         data={
             "capturedAt": captured_at.isoformat().replace("+00:00", "Z"),
             "triggerType": "OCCUPANCY_AND_DWELL",
@@ -84,6 +112,62 @@ def recognize(
             "trackingId": "track-1",
         },
     )
+
+
+def test_recognition_debug_image_saving_is_off_by_default(
+    client: TestClient,
+    test_app: FastAPI,
+    tmp_path: Path,
+) -> None:
+    debug_directory = tmp_path / "recognition_crops"
+    test_app.dependency_overrides[get_settings] = lambda: Settings(
+        recognition_debug_image_dir=debug_directory
+    )
+    test_app.dependency_overrides[get_recognition_provider] = lambda: StaticRecognitionProvider(
+        decision=RecognitionDecision(status=RecognitionStatus.UNKNOWN)
+    )
+    session_id = create_session(client)
+
+    response = recognize(
+        client,
+        session_id,
+        captured_at=datetime(2026, 8, 15, 13, 35, tzinfo=UTC),
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"recognitionStatus": "UNKNOWN"}
+    assert not debug_directory.exists()
+
+
+def test_recognition_debug_image_is_saved_before_provider_call(
+    client: TestClient,
+    test_app: FastAPI,
+    tmp_path: Path,
+) -> None:
+    captured_at = datetime(2026, 8, 15, 13, 35, 1, 123456, tzinfo=UTC)
+    debug_directory = tmp_path / "recognition_crops"
+    original_image_bytes = jpeg_bytes()
+    provider = DebugImageCheckingProvider(debug_directory, original_image_bytes)
+    test_app.dependency_overrides[get_settings] = lambda: Settings(
+        recognition_debug_save_images=True,
+        recognition_debug_image_dir=debug_directory,
+    )
+    test_app.dependency_overrides[get_recognition_provider] = lambda: provider
+    session_id = create_session(client)
+
+    response = recognize(
+        client,
+        session_id,
+        captured_at=captured_at,
+        image_bytes=original_image_bytes,
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"recognitionStatus": "UNKNOWN"}
+    assert provider.saved_image_path is not None
+    assert "20260815T133501_123456Z" in provider.saved_image_path.name
+    assert session_id in provider.saved_image_path.name
+    assert provider.saved_image_path.suffix == ".jpg"
 
 
 def test_create_session_matches_contract(client: TestClient) -> None:

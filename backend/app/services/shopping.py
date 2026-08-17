@@ -14,6 +14,7 @@ from app.providers.recognition import (
     RecognitionCandidate,
     RecognitionProvider,
     RecognitionProviderError,
+    RecognitionTelemetry,
 )
 from app.repositories.products import ProductRepository
 from app.repositories.shopping import SessionProductRepository, ShoppingSessionRepository
@@ -28,6 +29,7 @@ class RecognitionResult:
     product: Product | None = None
     session_product: SessionProduct | None = None
     pricing: PriceQuote | None = None
+    telemetry: RecognitionTelemetry | None = None
 
 
 class ShoppingSessionService:
@@ -115,7 +117,7 @@ class RecognitionService:
             ) from exc
 
         if decision.status is RecognitionStatus.UNKNOWN:
-            return RecognitionResult(status=RecognitionStatus.UNKNOWN)
+            return RecognitionResult(status=RecognitionStatus.UNKNOWN, telemetry=decision.telemetry)
 
         if decision.status is RecognitionStatus.AMBIGUOUS:
             candidate_product_ids = _allowed_candidate_ids(
@@ -123,10 +125,14 @@ class RecognitionService:
                 products_by_product_id,
             )
             if len(candidate_product_ids) < 2:
-                return RecognitionResult(status=RecognitionStatus.UNKNOWN)
+                return RecognitionResult(
+                    status=RecognitionStatus.UNKNOWN,
+                    telemetry=decision.telemetry,
+                )
             return RecognitionResult(
                 status=RecognitionStatus.AMBIGUOUS,
                 candidate_product_ids=candidate_product_ids,
+                telemetry=decision.telemetry,
             )
 
         product = products_by_product_id.get(decision.product_id or "")
@@ -149,6 +155,7 @@ class RecognitionService:
             product=product,
             session_product=session_product,
             pricing=quote,
+            telemetry=decision.telemetry,
         )
 
     def _get_active_session(self, session_id: UUID) -> ShoppingSession:
