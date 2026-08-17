@@ -16,7 +16,7 @@ from app.api.sessions import get_recognition_provider
 from app.core.config import Settings, get_settings
 from app.domain.enums import RecognitionStatus
 from app.models.currency_rate import CurrencyRate
-from app.models.shopping import SessionProduct
+from app.models.shopping import SessionProduct, ShoppingSession
 from app.providers.mock_recognition import MockRecognitionProvider
 from app.providers.recognition import (
     RecognitionCandidate,
@@ -69,8 +69,17 @@ class DebugImageCheckingProvider:
         return RecognitionDecision(status=RecognitionStatus.UNKNOWN)
 
 
-def create_session(client: TestClient) -> str:
-    response = client.post("/api/v1/sessions", json={"currency": "CNY"})
+def get_demo_store_id(client: TestClient) -> str:
+    response = client.get("/api/v1/stores")
+    assert response.status_code == 200
+    return str(response.json()["stores"][0]["id"])
+
+
+def create_session(client: TestClient, currency: str = "CNY") -> str:
+    response = client.post(
+        "/api/v1/sessions",
+        json={"currency": currency, "storeId": get_demo_store_id(client)},
+    )
     assert response.status_code == 201
     return str(response.json()["sessionId"])
 
@@ -171,16 +180,47 @@ def test_recognition_debug_image_is_saved_before_provider_call(
     assert provider.saved_image_path.suffix == ".jpg"
 
 
-def test_create_session_matches_contract(client: TestClient) -> None:
-    response = client.post("/api/v1/sessions", json={"currency": "CNY"})
+def test_create_session_matches_contract(client: TestClient, db_session: Session) -> None:
+    store_id = get_demo_store_id(client)
+    response = client.post(
+        "/api/v1/sessions",
+        json={"currency": "CNY", "storeId": store_id},
+    )
 
     assert response.status_code == 201
     body = response.json()
-    assert set(body) == {"sessionId", "status", "currency", "startedAt"}
+    assert set(body) == {"sessionId", "status", "currency", "storeId", "startedAt"}
     UUID(body["sessionId"])
     assert body["status"] == "ACTIVE"
     assert body["currency"] == "CNY"
+    assert body["storeId"] == store_id
     assert datetime.fromisoformat(body["startedAt"].replace("Z", "+00:00")).tzinfo is not None
+
+    shopping_session = db_session.get(ShoppingSession, UUID(body["sessionId"]))
+    assert shopping_session is not None
+    assert shopping_session.store_id == UUID(store_id)
+
+
+def test_create_session_rejects_unknown_store(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/sessions",
+        json={"currency": "CNY", "storeId": str(uuid4())},
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "error": {
+            "code": "STORE_NOT_FOUND",
+            "message": "Store was not found.",
+        }
+    }
+
+
+def test_create_session_requires_store_id(client: TestClient) -> None:
+    response = client.post("/api/v1/sessions", json={"currency": "CNY"})
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "INVALID_REQUEST"
 
 
 def test_mock_vertical_slice_and_duplicate_upsert(
@@ -255,8 +295,7 @@ def test_mock_vertical_slice_and_duplicate_upsert(
 
 
 def test_usd_session_returns_both_krw_and_usd_amounts(client: TestClient) -> None:
-    create_response = client.post("/api/v1/sessions", json={"currency": "USD"})
-    session_id = str(create_response.json()["sessionId"])
+    session_id = create_session(client, currency="USD")
 
     response = recognize(
         client,
@@ -279,7 +318,10 @@ def test_session_rejects_unsupported_target_currency(
     client: TestClient,
     currency: str,
 ) -> None:
-    response = client.post("/api/v1/sessions", json={"currency": currency})
+    response = client.post(
+        "/api/v1/sessions",
+        json={"currency": currency, "storeId": get_demo_store_id(client)},
+    )
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "INVALID_REQUEST"
@@ -680,6 +722,7 @@ def test_openapi_exposes_b1_contract(client: TestClient) -> None:
     assert response.status_code == 200
     document = response.json()
     paths = document["paths"]
+    assert "/api/v1/stores" in paths
     assert "/api/v1/sessions" in paths
     assert "/api/v1/sessions/{sessionId}/complete" in paths
     assert "/api/v1/sessions/{sessionId}/recognize" in paths
@@ -687,6 +730,9 @@ def test_openapi_exposes_b1_contract(client: TestClient) -> None:
     recognize_operation = paths["/api/v1/sessions/{sessionId}/recognize"]["post"]
     assert "multipart/form-data" in recognize_operation["requestBody"]["content"]
     assert recognize_operation["parameters"][0]["name"] == "sessionId"
+
+    session_create_schema = document["components"]["schemas"]["SessionCreateRequest"]
+    assert set(session_create_schema["required"]) == {"currency", "storeId"}
 
     multipart_schema_ref = recognize_operation["requestBody"]["content"]["multipart/form-data"][
         "schema"

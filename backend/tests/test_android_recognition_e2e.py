@@ -16,7 +16,13 @@ from app.providers.mock_recognition import MockRecognitionProvider
 
 
 def _create_session(client: TestClient) -> str:
-    response = client.post("/api/v1/sessions", json={"currency": "CNY"})
+    stores_response = client.get("/api/v1/stores")
+    assert stores_response.status_code == 200
+    store_id = stores_response.json()["stores"][0]["id"]
+    response = client.post(
+        "/api/v1/sessions",
+        json={"currency": "CNY", "storeId": store_id},
+    )
 
     assert response.status_code == 201
     return str(response.json()["sessionId"])
