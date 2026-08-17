@@ -44,3 +44,13 @@ def test_recognition_debug_image_settings_can_be_overridden(
 
     assert settings.recognition_debug_save_images is True
     assert settings.recognition_debug_image_dir == debug_directory
+
+
+def test_frankfurter_settings_can_be_overridden(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv("FRANKFURTER_BASE_URL", "https://frankfurter.test/v2")
+    monkeypatch.setenv("FRANKFURTER_TIMEOUT_SECONDS", "4.5")
+
+    settings = Settings()
+
+    assert settings.frankfurter_base_url == "https://frankfurter.test/v2"
+    assert settings.frankfurter_timeout_seconds == 4.5

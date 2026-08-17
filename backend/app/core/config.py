@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     # Calibrated on the Gen2 demo crops; remeasure when the catalog or encoder changes.
     openclip_match_threshold: float = Field(default=0.62, ge=-1, le=1)
     openclip_margin_threshold: float = Field(default=0.06, ge=0, le=2)
+    frankfurter_base_url: str = Field(
+        default="https://api.frankfurter.dev/v2",
+        min_length=1,
+    )
+    frankfurter_timeout_seconds: float = Field(default=10.0, gt=0)
 
 
 @lru_cache

@@ -6,6 +6,7 @@ requires-python = ">=3.11,<3.12"
 dependencies = [
     "alembic>=1.14,<2",
     "fastapi>=0.115,<1",
+    "httpx>=0.28,<1",
     "open-clip-torch>=2.32,<3",
     "openai>=2,<3",
     "pillow>=11,<13",
