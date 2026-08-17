@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import Settings, get_settings
 from app.db.base import Base
 from app.db.session import get_db_session
 from app.main import create_app
@@ -34,11 +35,22 @@ def db_session() -> Generator[Session, None, None]:
 @pytest.fixture
 def test_app(db_session: Session) -> Generator[FastAPI, None, None]:
     application = create_app()
+    test_settings = Settings(
+        app_env="test",
+        database_url="sqlite+pysqlite://",
+        recognition_provider="mock",
+        mock_recognition_status="MATCHED",
+        mock_recognition_product_id="test_outer_001",
+        recognition_max_image_bytes=5 * 1024 * 1024,
+        recognition_max_candidates=20,
+        openai_api_key=None,
+    )
 
     def override_db_session() -> Generator[Session, None, None]:
         yield db_session
 
     application.dependency_overrides[get_db_session] = override_db_session
+    application.dependency_overrides[get_settings] = lambda: test_settings
     yield application
     application.dependency_overrides.clear()
 

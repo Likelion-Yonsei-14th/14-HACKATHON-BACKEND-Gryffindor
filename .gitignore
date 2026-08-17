@@ -341,6 +341,9 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/python,macos,visualstudiocode,jetbrains
 
 # custom
+# Local recognition captures and benchmark outputs
+backend/artifacts/
+
 backend/tests/fixtures/openai/*.jpg
 backend/tests/fixtures/openai/*.jpeg
 backend/tests/fixtures/openai/query/*.jpg

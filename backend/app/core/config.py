@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     recognition_max_image_bytes: int = Field(default=5 * 1024 * 1024, gt=0)
     recognition_max_candidates: int = Field(default=20, gt=0)
     openai_api_key: SecretStr | None = Field(default=None, repr=False)
-    openai_vision_model: str = Field(default="gpt-5-mini", min_length=1)
+    openai_vision_model: str = Field(default="gpt-5.6-luna", min_length=1)
     openai_timeout_seconds: float = Field(default=20.0, gt=0)
 
 
