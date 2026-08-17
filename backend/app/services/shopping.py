@@ -18,6 +18,7 @@ from app.providers.recognition import (
 )
 from app.repositories.products import ProductRepository
 from app.repositories.shopping import SessionProductRepository, ShoppingSessionRepository
+from app.repositories.stores import StoreRepository
 from app.services.exchange_rates import ExchangeRateService
 from app.services.pricing import PriceQuote, PricingService
 
@@ -38,10 +39,14 @@ class ShoppingSessionService:
         self._db = db
         self._sessions = ShoppingSessionRepository(db)
         self._session_products = SessionProductRepository(db)
+        self._stores = StoreRepository(db)
         self._pricing = PricingService(ExchangeRateService(db))
 
-    def create(self, currency: str) -> ShoppingSession:
-        shopping_session = self._sessions.add(ShoppingSession(currency=currency))
+    def create(self, currency: str, store_id: UUID) -> ShoppingSession:
+        store = self._stores.get(store_id)
+        if store is None:
+            raise AppError(404, "STORE_NOT_FOUND", "Store was not found.")
+        shopping_session = self._sessions.add(ShoppingSession(currency=currency, store_id=store.id))
         self._db.commit()
         return shopping_session
 

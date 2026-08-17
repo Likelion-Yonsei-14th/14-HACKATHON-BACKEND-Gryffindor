@@ -109,13 +109,15 @@ RecognitionProviderDependency = Annotated[
     "/sessions",
     response_model=SessionResponse,
     status_code=status.HTTP_201_CREATED,
+    responses={404: {"model": ErrorResponse}},
 )
 def create_session(payload: SessionCreateRequest, db: DbSession) -> SessionResponse:
-    shopping_session = ShoppingSessionService(db).create(payload.currency)
+    shopping_session = ShoppingSessionService(db).create(payload.currency, payload.store_id)
     return SessionResponse(
         session_id=shopping_session.id,
         status=shopping_session.status,
         currency=shopping_session.currency,
+        store_id=shopping_session.store_id,
         started_at=shopping_session.started_at,
     )
 

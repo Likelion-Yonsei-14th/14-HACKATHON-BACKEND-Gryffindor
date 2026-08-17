@@ -15,13 +15,29 @@ class ApiModel(BaseModel):
 
 class SessionCreateRequest(ApiModel):
     currency: Literal["USD", "CNY"]
+    store_id: UUID
 
 
 class SessionResponse(ApiModel):
     session_id: UUID
     status: SessionStatus
     currency: str
+    store_id: UUID
     started_at: datetime
+
+
+class StoreResponse(ApiModel):
+    id: UUID
+    name: str
+    brand: str
+    country: str
+    city: str
+    type: str
+    airport_code: str | None
+
+
+class StoreListResponse(ApiModel):
+    stores: list[StoreResponse]
 
 
 class SessionCompleteResponse(ApiModel):
