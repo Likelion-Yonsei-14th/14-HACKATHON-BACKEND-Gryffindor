@@ -26,12 +26,17 @@ from app.models.common import utc_now
 
 if TYPE_CHECKING:
     from app.models.product import Product
+    from app.models.store import Store
 
 
 class ShoppingSession(Base):
     __tablename__ = "shopping_sessions"
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    store_id: Mapped[UUID] = mapped_column(
+        ForeignKey("stores.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
     status: Mapped[SessionStatus] = mapped_column(
         Enum(SessionStatus, name="session_status"),
         nullable=False,
@@ -63,6 +68,7 @@ class ShoppingSession(Base):
         back_populates="shopping_session",
         cascade="all, delete-orphan",
     )
+    store: Mapped[Store] = relationship(back_populates="shopping_sessions")
 
 
 class SessionProduct(Base):
