@@ -1,6 +1,5 @@
 import logging
 from dataclasses import dataclass, field
-from math import asin, cos, radians, sin, sqrt
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -24,6 +23,7 @@ from app.providers.recommendation import (
 )
 from app.repositories.personalization import PersonalizationRepository
 from app.repositories.trips import TripRepository
+from app.services.geo import haversine_distance_km
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ class RecommendedStore:
     store: Store
     reason: str
     products: tuple[RecommendedProduct, ...]
+    distance_from_current_location_km: float | None = None
     distance_from_hotel_km: float | None = None
     has_wishlist_items: bool = False
 
@@ -73,6 +74,7 @@ class _History:
 class _TripStoreCandidate:
     store: Store
     eligible_products: tuple[Product, ...]
+    distance_from_current_location_km: float | None
     distance_from_hotel_km: float | None
     near_hotel: bool
     airport_match: bool
@@ -87,6 +89,9 @@ class BuiltRecommendationContext:
     products_by_public_id: dict[str, Product]
     product_ids_by_store: dict[UUID, frozenset[str]]
     distance_by_store: dict[UUID, float | None] = field(
+        default_factory=lambda: dict[UUID, float | None]()
+    )
+    current_distance_by_store: dict[UUID, float | None] = field(
         default_factory=lambda: dict[UUID, float | None]()
     )
     wishlist_match_by_store: dict[UUID, bool] = field(
@@ -170,7 +175,13 @@ class RecommendationContextBuilder:
             product_ids_by_store=product_ids_by_store,
         )
 
-    def build_for_trip(self, trip_id: UUID) -> BuiltRecommendationContext:
+    def build_for_trip(
+        self,
+        trip_id: UUID,
+        *,
+        current_latitude: float | None = None,
+        current_longitude: float | None = None,
+    ) -> BuiltRecommendationContext:
         history = self._build_history()
         trip = self._trips.get_detail(DEMO_USER_ID, trip_id)
         if trip is None:
@@ -192,6 +203,12 @@ class RecommendationContextBuilder:
             )
             if not eligible_products:
                 continue
+            current_distance = haversine_distance_km(
+                current_latitude,
+                current_longitude,
+                store.latitude,
+                store.longitude,
+            )
             distance = (
                 haversine_distance_km(
                     hotel.latitude,
@@ -220,6 +237,7 @@ class RecommendationContextBuilder:
                 _TripStoreCandidate(
                     store=store,
                     eligible_products=eligible_products,
+                    distance_from_current_location_km=current_distance,
                     distance_from_hotel_km=distance,
                     near_hotel=distance is not None and distance <= _HOTEL_NEAR_DISTANCE_KM,
                     airport_match=airport_match,
@@ -230,7 +248,14 @@ class RecommendationContextBuilder:
                 )
             )
 
-        selected_stores = sorted(store_candidates, key=_trip_store_sort_key)[:_TRIP_STORE_LIMIT]
+        selected_stores = sorted(
+            store_candidates,
+            key=lambda candidate: _trip_store_sort_key(
+                candidate,
+                prioritize_current_location=current_latitude is not None
+                and current_longitude is not None,
+            ),
+        )[:_TRIP_STORE_LIMIT]
         candidates_by_id: dict[str, Product] = {}
         store_ids_by_product: dict[str, set[UUID]] = {}
         for candidate in selected_stores:
@@ -253,6 +278,7 @@ class RecommendationContextBuilder:
         stores_by_id: dict[UUID, Store] = {}
         product_ids_by_store: dict[UUID, frozenset[str]] = {}
         distance_by_store: dict[UUID, float | None] = {}
+        current_distance_by_store: dict[UUID, float | None] = {}
         wishlist_match_by_store: dict[UUID, bool] = {}
         for candidate in selected_stores:
             product_ids = sorted(
@@ -267,6 +293,7 @@ class RecommendationContextBuilder:
                 _candidate_store_context(
                     store,
                     product_ids,
+                    distance_from_current_location_km=candidate.distance_from_current_location_km,
                     distance_from_hotel_km=candidate.distance_from_hotel_km,
                     airport_match=candidate.airport_match,
                     terminal_match=candidate.terminal_match,
@@ -276,6 +303,7 @@ class RecommendationContextBuilder:
             stores_by_id[store.id] = store
             product_ids_by_store[store.id] = frozenset(product_ids)
             distance_by_store[store.id] = candidate.distance_from_hotel_km
+            current_distance_by_store[store.id] = candidate.distance_from_current_location_km
             wishlist_match_by_store[store.id] = candidate.has_wishlist_items
 
         return BuiltRecommendationContext(
@@ -316,6 +344,7 @@ class RecommendationContextBuilder:
             products_by_public_id=products_by_public_id,
             product_ids_by_store=product_ids_by_store,
             distance_by_store=distance_by_store,
+            current_distance_by_store=current_distance_by_store,
             wishlist_match_by_store=wishlist_match_by_store,
         )
 
@@ -386,8 +415,17 @@ class RecommendationService:
     async def recommend_for_trip(
         self,
         trip_id: UUID,
+        *,
+        current_latitude: float | None = None,
+        current_longitude: float | None = None,
     ) -> tuple[RecommendationResult, RecommendationContext]:
-        return await self._recommend_built(self._builder.build_for_trip(trip_id))
+        return await self._recommend_built(
+            self._builder.build_for_trip(
+                trip_id,
+                current_latitude=current_latitude,
+                current_longitude=current_longitude,
+            )
+        )
 
     async def _recommend_built(
         self,
@@ -440,6 +478,7 @@ class RecommendationService:
                     store=store,
                     reason=store_decision.reason,
                     products=tuple(recommended_products),
+                    distance_from_current_location_km=built.current_distance_by_store.get(store.id),
                     distance_from_hotel_km=built.distance_by_store.get(store.id),
                     has_wishlist_items=built.wishlist_match_by_store.get(store.id, False),
                 )
@@ -448,28 +487,6 @@ class RecommendationService:
         if invalid_items:
             logger.warning("recommendation_validation_failed invalid_items=%d", invalid_items)
         return RecommendationResult(stores=tuple(recommended_stores)), built.context
-
-
-def haversine_distance_km(
-    latitude_a: float | None,
-    longitude_a: float | None,
-    latitude_b: float | None,
-    longitude_b: float | None,
-) -> float | None:
-    if None in {latitude_a, longitude_a, latitude_b, longitude_b}:
-        return None
-    assert latitude_a is not None
-    assert longitude_a is not None
-    assert latitude_b is not None
-    assert longitude_b is not None
-    latitude_delta = radians(latitude_b - latitude_a)
-    longitude_delta = radians(longitude_b - longitude_a)
-    start_latitude = radians(latitude_a)
-    end_latitude = radians(latitude_b)
-    haversine = sin(latitude_delta / 2) ** 2 + (
-        cos(start_latitude) * cos(end_latitude) * sin(longitude_delta / 2) ** 2
-    )
-    return round(2 * 6371.0088 * asin(sqrt(haversine)), 2)
 
 
 def _prioritize_product_ids(
@@ -514,6 +531,7 @@ def _candidate_store_context(
     store: Store,
     product_ids: list[str],
     *,
+    distance_from_current_location_km: float | None = None,
     distance_from_hotel_km: float | None = None,
     airport_match: bool = False,
     terminal_match: bool = False,
@@ -532,6 +550,7 @@ def _candidate_store_context(
         longitude=store.longitude,
         terminal=store.terminal,
         opening_hours=store.opening_hours,
+        distance_from_current_location_km=distance_from_current_location_km,
         distance_from_hotel_km=distance_from_hotel_km,
         airport_match=airport_match,
         terminal_match=terminal_match,
@@ -562,18 +581,38 @@ def _all_flight_airports(flight: Flight | None) -> set[str]:
     }
 
 
-def _trip_store_sort_key(candidate: _TripStoreCandidate) -> tuple[int, int, float, str]:
-    priority = (
-        0
-        if candidate.near_hotel
-        else 1
-        if candidate.airport_match
-        else 2
-        if candidate.has_wishlist_items
-        else 3
-    )
+def _trip_store_sort_key(
+    candidate: _TripStoreCandidate,
+    *,
+    prioritize_current_location: bool = False,
+) -> tuple[int, float, int, float, str]:
+    if prioritize_current_location:
+        priority = (
+            0
+            if candidate.distance_from_current_location_km is not None
+            else 1
+            if candidate.has_wishlist_items
+            else 2
+            if candidate.near_hotel
+            else 3
+            if candidate.airport_match
+            else 4
+        )
+    else:
+        priority = (
+            0
+            if candidate.near_hotel
+            else 1
+            if candidate.airport_match
+            else 2
+            if candidate.has_wishlist_items
+            else 3
+        )
     return (
         priority,
+        candidate.distance_from_current_location_km
+        if candidate.distance_from_current_location_km is not None
+        else float("inf"),
         0 if candidate.terminal_match else 1,
         candidate.distance_from_hotel_km
         if candidate.distance_from_hotel_km is not None

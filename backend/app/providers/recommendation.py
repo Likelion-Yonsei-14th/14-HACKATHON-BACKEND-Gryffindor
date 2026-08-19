@@ -71,6 +71,7 @@ class CandidateStoreContext(RecommendationModel):
     longitude: float | None = None
     terminal: str | None = None
     opening_hours: str | None = None
+    distance_from_current_location_km: float | None = None
     distance_from_hotel_km: float | None = None
     airport_match: bool = False
     terminal_match: bool = False

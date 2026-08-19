@@ -51,6 +51,18 @@ class StoreListResponse(ApiModel):
     stores: list[StoreResponse]
 
 
+class NearbyStoreResponse(ApiModel):
+    store_id: UUID
+    name: str
+    type: str
+    address: str | None
+    latitude: float
+    longitude: float
+    distance_km: float
+    airport_code: str | None
+    terminal: str | None
+
+
 class SessionCompleteResponse(ApiModel):
     session_id: UUID
     status: SessionStatus
@@ -360,6 +372,7 @@ class FeedStoreResponse(ApiModel):
     store_id: UUID
     name: str
     type: str
+    distance_from_current_location_km: float | None = None
     distance_from_hotel_km: float | None
     airport_code: str | None
     terminal: str | None

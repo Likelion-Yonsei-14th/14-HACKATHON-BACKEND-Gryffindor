@@ -2,12 +2,13 @@ import logging
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path, Response, status
+from fastapi import APIRouter, Depends, Path, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.me import get_recommendation_provider
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
+from app.errors import AppError
 from app.models.personalization import Flight
 from app.models.product import Product
 from app.models.trip import HotelStay, Trip, VisitReservation
@@ -123,13 +124,25 @@ async def trip_feed(
     db: DbSession,
     settings: AppSettings,
     provider: RecommendationProviderDependency,
+    latitude: Annotated[float | None, Query(ge=-90, le=90)] = None,
+    longitude: Annotated[float | None, Query(ge=-180, le=180)] = None,
 ) -> TripFeedResponse:
+    if (latitude is None) != (longitude is None):
+        raise AppError(
+            422,
+            "INVALID_REQUEST",
+            "latitude and longitude must be provided together.",
+        )
     trip = TripService(db).get_trip(trip_id)
     result, context = await RecommendationService(
         db,
         provider,
         candidate_limit=settings.recommendation_max_candidates,
-    ).recommend_for_trip(trip.id)
+    ).recommend_for_trip(
+        trip.id,
+        current_latitude=latitude,
+        current_longitude=longitude,
+    )
     logger.info(
         "trip_feed_completed trip_id=%s provider=%s recommendations=%d candidates=%d stores=%d",
         trip.id,
@@ -313,6 +326,9 @@ def _feed_recommendations(result: RecommendationResult) -> list[FeedRecommendati
                     store_id=recommended_store.store.id,
                     name=recommended_store.store.name,
                     type=recommended_store.store.type,
+                    distance_from_current_location_km=(
+                        recommended_store.distance_from_current_location_km
+                    ),
                     distance_from_hotel_km=recommended_store.distance_from_hotel_km,
                     airport_code=recommended_store.store.airport_code,
                     terminal=recommended_store.store.terminal,

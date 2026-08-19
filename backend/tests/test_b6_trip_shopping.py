@@ -319,6 +319,56 @@ def test_trip_feed_rejects_openai_ids_outside_candidates(
     assert response.json()["recommendations"] == []
 
 
+def test_trip_feed_uses_current_location_and_requires_both_coordinates(
+    client: TestClient,
+    test_app: FastAPI,
+) -> None:
+    trip_id = _create_trip(client)
+
+    def recommend(context: RecommendationContext) -> RecommendationDecision:
+        first_store = context.candidate_stores[0]
+        assert first_store.distance_from_current_location_km is not None
+        return RecommendationDecision(
+            stores=[
+                RecommendationStoreDecision(
+                    store_id=first_store.store_id,
+                    reason="현재 위치에서 가까운 매장입니다.",
+                    products=[
+                        RecommendationProductDecision(
+                            product_id=first_store.product_ids[0],
+                            reason="가까운 매장에서 확인할 수 있습니다.",
+                        )
+                    ],
+                )
+            ]
+        )
+
+    test_app.dependency_overrides[get_recommendation_provider] = lambda: (
+        CapturingRecommendationProvider(recommend)
+    )
+    response = client.get(
+        f"/api/v1/me/trips/{trip_id}/feed",
+        params={"latitude": 37.56, "longitude": 126.98},
+    )
+
+    assert response.status_code == 200
+    store = response.json()["recommendations"][0]["stores"][0]
+    assert store["distanceFromCurrentLocationKm"] is not None
+    assert store["distanceFromHotelKm"] is None
+
+    missing_longitude = client.get(
+        f"/api/v1/me/trips/{trip_id}/feed",
+        params={"latitude": 37.56},
+    )
+    invalid_latitude = client.get(
+        f"/api/v1/me/trips/{trip_id}/feed",
+        params={"latitude": 91, "longitude": 126.98},
+    )
+    assert missing_longitude.status_code == 422
+    assert invalid_latitude.status_code == 422
+    assert missing_longitude.json()["error"]["code"] == "INVALID_REQUEST"
+
+
 def test_store_wishlist_intersection_and_reservation_validation(
     client: TestClient,
 ) -> None:
