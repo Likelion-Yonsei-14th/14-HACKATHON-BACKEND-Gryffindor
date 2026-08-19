@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel
 
 from app.domain.enums import PurchaseState, RecognitionStatus, SessionStatus, TriggerType
@@ -123,7 +123,7 @@ class ReceiptItemResponse(ApiModel):
 
 class ReceiptResponse(ApiModel):
     id: UUID
-    store_name: str
+    store_name: str | None
     purchased_at: datetime | None
     total_amount: int | None
     currency: str | None
@@ -133,11 +133,60 @@ class ReceiptResponse(ApiModel):
 
 class FlightResponse(ApiModel):
     id: UUID
-    departure_airport: str
-    arrival_airport: str
+    departure_airport: str | None
+    arrival_airport: str | None
+    terminal: str | None
     flight_number: str | None
     departure_at: datetime | None
+    arrival_at: datetime | None
+    airport_arrival_at: datetime | None
     created_at: datetime
+
+
+class FlightPatchRequest(ApiModel):
+    departure_airport: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
+    arrival_airport: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
+    terminal: str | None = Field(default=None, min_length=1, max_length=100)
+    flight_number: str | None = Field(default=None, min_length=2, max_length=20)
+    departure_at: datetime | None = None
+    arrival_at: datetime | None = None
+    airport_arrival_at: datetime | None = None
+
+    @field_validator("departure_at", "arrival_at", "airport_arrival_at")
+    @classmethod
+    def require_aware_flight_time(cls, value: datetime | None) -> datetime | None:
+        if value is not None and (value.tzinfo is None or value.utcoffset() is None):
+            raise ValueError("flight timestamps must include a timezone offset")
+        return value
+
+
+class PurchaseItemResponse(ApiModel):
+    purchase_item_id: UUID
+    product: ProductResponse | None
+    fallback_product_name: str | None
+    quantity: int | None
+    price: int | None
+
+
+class PurchaseResponse(ApiModel):
+    id: UUID
+    store_name: str | None
+    purchased_at: datetime | None
+    total_amount: int | None
+    currency: str | None
+    items: list[PurchaseItemResponse]
+    created_at: datetime
+
+
+class PurchasedProductResponse(ApiModel):
+    purchase_item_id: UUID
+    product: ProductResponse | None
+    fallback_product_name: str | None
+    quantity: int | None
+    price: int | None
+    currency: str | None
+    store_name: str | None
+    purchased_at: datetime | None
 
 
 class RecommendationProductResponse(ApiModel):
@@ -164,5 +213,5 @@ class UserResponse(ApiModel):
 class MyPageResponse(ApiModel):
     user: UserResponse
     wishlist: list[ProductResponse]
-    receipts: list[ReceiptResponse]
+    purchased_products: list[PurchasedProductResponse]
     flight: FlightResponse | None

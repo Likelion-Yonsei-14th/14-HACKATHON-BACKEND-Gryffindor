@@ -94,7 +94,7 @@ class Receipt(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    store_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    store_name: Mapped[str | None] = mapped_column(String(255))
     purchased_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     total_amount: Mapped[int | None] = mapped_column(BigInteger)
     currency: Mapped[str | None] = mapped_column(String(3))
@@ -149,10 +149,13 @@ class Flight(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    departure_airport: Mapped[str] = mapped_column(String(3), nullable=False)
-    arrival_airport: Mapped[str] = mapped_column(String(3), nullable=False)
+    departure_airport: Mapped[str | None] = mapped_column(String(3))
+    arrival_airport: Mapped[str | None] = mapped_column(String(3))
+    terminal: Mapped[str | None] = mapped_column(String(100))
     flight_number: Mapped[str | None] = mapped_column(String(20))
     departure_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    arrival_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    airport_arrival_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

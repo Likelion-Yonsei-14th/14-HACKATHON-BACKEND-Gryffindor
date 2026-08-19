@@ -89,14 +89,19 @@ def _image_media_type(image_bytes: bytes) -> str:
     raise DocumentExtractionProviderError("Document input must be a JPEG or PNG image")
 
 
-_RECEIPT_PROMPT = """Extract one shopping receipt into the provided schema. Use only facts visible
-in the image. Return null for optional values that are absent or uncertain; never guess. Preserve
-the item names as printed, use a three-letter uppercase currency code, integer minor-unit-free
-amounts, and an ISO 8601 timestamp with an explicit timezone offset. Include every visible item.
+_RECEIPT_PROMPT = """Extract one shopping receipt as a purchase capture into the provided schema.
+Use only values actually visible in the image and return null for absent, unreadable, or uncertain
+optional values. Preserve every item name as printed; never rewrite it as a guessed brand catalog
+name. Do not correct or reconcile item prices and totals even when they do not add up. Ignore tax
+refund voucher, VAT, passport, certificate, and refund-processing information. Use a three-letter
+uppercase currency code, integer minor-unit-free amounts, and an ISO 8601 timestamp with an
+explicit timezone offset. Include every readable purchased item and never guess missing facts.
 """
 
 _FLIGHT_PROMPT = """Extract one flight ticket or boarding pass into the provided schema. Use only
 facts visible in the image. Return null for optional values that are absent or uncertain; never
-guess. Return IATA airports as uppercase three-letter codes and departureAt as ISO 8601 with an
-explicit timezone offset. Do not infer a date or timezone that is not supported by the document.
+guess. Extract departureAirport, arrivalAirport, terminal, flightNumber, departureAt, and arrivalAt
+only. Return IATA airports as uppercase three-letter codes and timestamps as ISO 8601 with an
+explicit timezone offset. Do not infer a date, timezone, connection itinerary, or airport arrival
+plan that is not explicitly supported by the document.
 """
