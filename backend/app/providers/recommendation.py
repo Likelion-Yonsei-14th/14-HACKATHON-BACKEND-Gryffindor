@@ -1,0 +1,79 @@
+from datetime import datetime
+from typing import Protocol
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic.alias_generators import to_camel
+
+
+class RecommendationModel(BaseModel):
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        extra="forbid",
+        str_strip_whitespace=True,
+    )
+
+
+class ViewedProductContext(RecommendationModel):
+    product_id: str
+    observation_count: int
+    max_dwell_ms: int
+    store_ids: list[UUID]
+
+
+class FlightContext(RecommendationModel):
+    departure_airport: str
+    arrival_airport: str
+    departure_at: datetime | None
+
+
+class CandidateStoreContext(RecommendationModel):
+    store_id: UUID
+    name: str
+    country: str
+    city: str
+    type: str
+    airport_code: str | None
+    product_ids: list[str]
+
+
+class CandidateProductContext(RecommendationModel):
+    product_id: str
+    sku: str
+    brand: str
+    name: str
+    category: str
+    store_ids: list[UUID]
+
+
+class RecommendationContext(RecommendationModel):
+    wishlist_product_ids: list[str]
+    viewed_products: list[ViewedProductContext]
+    purchased_product_ids: list[str]
+    latest_flight: FlightContext | None
+    candidate_stores: list[CandidateStoreContext]
+    candidate_products: list[CandidateProductContext]
+
+
+class RecommendationProductDecision(RecommendationModel):
+    product_id: str = Field(min_length=1, max_length=64)
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class RecommendationStoreDecision(RecommendationModel):
+    store_id: UUID
+    reason: str = Field(min_length=1, max_length=500)
+    products: list[RecommendationProductDecision] = Field(max_length=10)
+
+
+class RecommendationDecision(RecommendationModel):
+    stores: list[RecommendationStoreDecision] = Field(max_length=10)
+
+
+class RecommendationProviderError(Exception):
+    """A retryable or malformed response from the recommendation provider."""
+
+
+class RecommendationProvider(Protocol):
+    async def recommend(self, context: RecommendationContext) -> RecommendationDecision: ...

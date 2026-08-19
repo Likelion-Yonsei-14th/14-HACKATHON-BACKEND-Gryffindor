@@ -108,3 +108,61 @@ class ErrorDetail(ApiModel):
 
 class ErrorResponse(ApiModel):
     error: ErrorDetail
+
+
+class WishlistResponse(ApiModel):
+    items: list[ProductResponse]
+
+
+class ReceiptItemResponse(ApiModel):
+    name: str
+    product_id: str | None
+    quantity: int | None
+    price: int | None
+
+
+class ReceiptResponse(ApiModel):
+    id: UUID
+    store_name: str
+    purchased_at: datetime | None
+    total_amount: int | None
+    currency: str | None
+    items: list[ReceiptItemResponse]
+    created_at: datetime
+
+
+class FlightResponse(ApiModel):
+    id: UUID
+    departure_airport: str
+    arrival_airport: str
+    flight_number: str | None
+    departure_at: datetime | None
+    created_at: datetime
+
+
+class RecommendationProductResponse(ApiModel):
+    product: ProductResponse
+    reason: str
+
+
+class RecommendationStoreResponse(ApiModel):
+    store_id: UUID
+    name: str
+    reason: str
+    products: list[RecommendationProductResponse]
+
+
+class RecommendationResponse(ApiModel):
+    stores: list[RecommendationStoreResponse]
+
+
+class UserResponse(ApiModel):
+    id: int
+    name: str
+
+
+class MyPageResponse(ApiModel):
+    user: UserResponse
+    wishlist: list[ProductResponse]
+    receipts: list[ReceiptResponse]
+    flight: FlightResponse | None

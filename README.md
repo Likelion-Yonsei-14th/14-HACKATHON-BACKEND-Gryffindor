@@ -108,6 +108,8 @@ OpenAI를 명시적으로 사용할 때만 `.env`의 OpenAI 항목 주석을 해
 RECOGNITION_PROVIDER=openai
 OPENAI_API_KEY=<your-key>
 OPENAI_VISION_MODEL=gpt-5.6-luna
+OPENAI_DOCUMENT_MODEL=gpt-5.6-luna
+OPENAI_RECOMMENDATION_MODEL=gpt-5.6-luna
 ```
 
 Android UI 상태만 검증할 때는 Mock을 사용한다.
@@ -136,6 +138,11 @@ cd backend
 - `POST /api/v1/sessions/{sessionId}/recognize`
 - `GET /api/v1/sessions/{sessionId}/products`
 - `POST /api/v1/sessions/{sessionId}/complete`
+- `GET|POST|DELETE /api/v1/me/wishlist[/{productId}]`
+- `POST /api/v1/me/receipts/analyze`
+- `POST /api/v1/me/flights/analyze`
+- `GET /api/v1/me/recommendations`
+- `GET /api/v1/me`
 
 나머지 DTO와 endpoint는 [API contract](docs/API_CONTRACT.md)를 따른다.
 
