@@ -22,6 +22,7 @@ from app.db.base import Base
 from app.models.common import utc_now
 
 if TYPE_CHECKING:
+    from app.models.personalization import ReceiptItem, StoreProduct, WishlistItem
     from app.models.shopping import SessionProduct
 
 
@@ -77,3 +78,9 @@ class Product(Base):
     )
 
     session_products: Mapped[list[SessionProduct]] = relationship(back_populates="product")
+    wishlist_items: Mapped[list[WishlistItem]] = relationship(back_populates="product")
+    receipt_items: Mapped[list[ReceiptItem]] = relationship(back_populates="product")
+    store_products: Mapped[list[StoreProduct]] = relationship(
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )

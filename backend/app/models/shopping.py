@@ -20,11 +20,13 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.constants import DEMO_USER_ID
 from app.db.base import Base
 from app.domain.enums import PurchaseState, SessionStatus, TriggerType
 from app.models.common import utc_now
 
 if TYPE_CHECKING:
+    from app.models.personalization import User
     from app.models.product import Product
     from app.models.store import Store
 
@@ -36,6 +38,12 @@ class ShoppingSession(Base):
     store_id: Mapped[UUID] = mapped_column(
         ForeignKey("stores.id", ondelete="RESTRICT"),
         nullable=False,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=DEMO_USER_ID,
+        server_default=str(DEMO_USER_ID),
     )
     status: Mapped[SessionStatus] = mapped_column(
         Enum(SessionStatus, name="session_status"),
@@ -69,6 +77,7 @@ class ShoppingSession(Base):
         cascade="all, delete-orphan",
     )
     store: Mapped[Store] = relationship(back_populates="shopping_sessions")
+    user: Mapped[User] = relationship(back_populates="shopping_sessions")
 
 
 class SessionProduct(Base):
