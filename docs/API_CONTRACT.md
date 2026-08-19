@@ -44,6 +44,40 @@ Response `200`:
 }
 ```
 
+### `GET /api/v1/stores/nearby`
+
+Android의 현재 위치를 기준으로 좌표가 등록된 Store만 Haversine 거리 오름차순으로 반환한다.
+외부 지도 API는 호출하지 않으며, 현재 위치는 저장하지 않는다.
+
+```http
+GET /api/v1/stores/nearby?latitude=37.56&longitude=126.98&limit=10
+```
+
+- `latitude`: `-90` ~ `90`, required
+- `longitude`: `-180` ~ `180`, required
+- `limit`: optional, 기본 `10`, `1` ~ `100`
+
+Response `200`:
+
+```json
+[
+  {
+    "storeId": "uuid",
+    "name": "Seoul Center Department Store A",
+    "type": "DEPARTMENT_STORE",
+    "address": "서울특별시 중구 을지로 30 인근 (Demo)",
+    "latitude": 37.5646,
+    "longitude": 126.9813,
+    "distanceKm": 0.53,
+    "airportCode": null,
+    "terminal": null
+  }
+]
+```
+
+좌표가 없는 Store는 응답에서 제외한다. 현재 B6의 `DEPARTMENT_STORE`와 `DUTY_FREE`를 포함해
+기존 Store 전체를 대상으로 하며, 별도 `storeType` 필터는 제공하지 않는다.
+
 ---
 
 ## 4. Shopping Session
@@ -630,6 +664,9 @@ PUT은 Trip당 한 HotelStay를 upsert한다. `name` 외에 `address`, `latitude
 ### Trip Feed
 
 `GET /api/v1/me/trips/{tripId}/feed`는 이 endpoint에서만 OpenAI 추천을 생성한다.
+`latitude`와 `longitude` query parameter를 모두 전달하면 요청 시점의 현재 위치를 추천
+context에 포함한다. 둘 중 하나만 전달하거나 좌표 범위를 벗어나면 `422 INVALID_REQUEST`다.
+두 parameter를 생략하면 기존 동작과 정렬 우선순위를 유지한다.
 
 ```json
 {
@@ -650,6 +687,7 @@ PUT은 Trip당 한 HotelStay를 upsert한다. `name` 외에 `address`, `latitude
           "storeId": "uuid",
           "name": "Seoul Center Department Store A",
           "type": "DEPARTMENT_STORE",
+          "distanceFromCurrentLocationKm": null,
           "distanceFromHotelKm": 1.3,
           "airportCode": null,
           "terminal": null,
@@ -662,9 +700,11 @@ PUT은 Trip당 한 HotelStay를 upsert한다. `name` 외에 `address`, `latitude
 }
 ```
 
-서버가 DB 관계, 구매 exact product 제외, Haversine 거리, 공항/터미널 match를 계산한 뒤
-Product 최대 20개, Store 최대 10개만 provider에 전달한다. Provider 결과의 Store/Product ID와
-StoreProduct 관계는 기존과 같이 allowlist 검증한다.
+서버가 DB 관계, 구매 exact product 제외, 현재 위치와 숙소의 Haversine 거리, 공항/터미널
+match를 계산한 뒤 Product 최대 20개, Store 최대 10개만 provider에 전달한다. 현재 위치가
+제공되면 현재 위치 거리, Wishlist 상품 취급 여부, 숙소 거리, 출국 공항/터미널 순으로 Store
+우선순위를 확장한다. Provider 결과의 Store/Product ID와 StoreProduct 관계는 기존과 같이
+allowlist 검증한다.
 
 ### Store Wishlist Intersection
 
