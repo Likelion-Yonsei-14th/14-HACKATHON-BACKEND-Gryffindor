@@ -22,6 +22,8 @@ from app.schemas.api import (
     HotelStayRequest,
     HotelStayResponse,
     ProductResponse,
+    RefundChecklistItemResponse,
+    RefundChecklistResponse,
     ReservationStoreResponse,
     StoreWishlistProductResponse,
     TripCreateRequest,
@@ -34,6 +36,7 @@ from app.schemas.api import (
     VisitReservationResponse,
 )
 from app.services.recommendations import RecommendationResult, RecommendationService
+from app.services.refund_checklist import RefundChecklistService
 from app.services.trips import TripService
 
 router = APIRouter(prefix="/api/v1/me", tags=["trip-shopping"])
@@ -86,6 +89,32 @@ def update_trip(
 ) -> TripResponse:
     trip = TripService(db).update_trip(trip_id, payload.model_dump(exclude_unset=True))
     return _trip_response(trip)
+
+
+@router.get(
+    "/trips/{tripId}/refund-checklist",
+    response_model=RefundChecklistResponse,
+    responses={404: {"model": ErrorResponse}},
+)
+def refund_checklist(
+    trip_id: Annotated[UUID, Path(alias="tripId")],
+    db: DbSession,
+) -> RefundChecklistResponse:
+    result = RefundChecklistService(db).build(trip_id)
+    return RefundChecklistResponse(
+        trip_id=result.trip_id,
+        status=result.status,
+        items=[
+            RefundChecklistItemResponse(
+                id=item.id,
+                title=item.title,
+                description=item.description,
+                required=item.required,
+            )
+            for item in result.items
+        ],
+        notice=result.notice,
+    )
 
 
 @router.put(

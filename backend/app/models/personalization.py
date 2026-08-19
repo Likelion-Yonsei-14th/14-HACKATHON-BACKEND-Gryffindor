@@ -8,6 +8,7 @@ from sqlalchemy import (
     BigInteger,
     CheckConstraint,
     DateTime,
+    Enum,
     ForeignKey,
     Integer,
     String,
@@ -19,6 +20,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.domain.enums import RefundMethod
 from app.models.common import utc_now
 
 if TYPE_CHECKING:
@@ -92,12 +94,32 @@ class Receipt(Base):
             "total_amount IS NULL OR total_amount >= 0",
             name="ck_receipts_total_amount_nonnegative",
         ),
+        CheckConstraint(
+            "refund_method IN ('UNKNOWN', 'IMMEDIATE', 'DOWNTOWN', 'AIRPORT')",
+            name="ck_receipts_refund_method",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
+    )
+    trip_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("trips.id", ondelete="SET NULL"),
+        index=True,
+    )
+    refund_method: Mapped[RefundMethod] = mapped_column(
+        Enum(
+            RefundMethod,
+            name="refund_method",
+            native_enum=False,
+            length=16,
+            create_constraint=False,
+        ),
+        nullable=False,
+        default=RefundMethod.UNKNOWN,
+        server_default=RefundMethod.UNKNOWN.value,
     )
     store_name: Mapped[str | None] = mapped_column(String(255))
     purchased_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -112,6 +134,7 @@ class Receipt(Base):
     )
 
     user: Mapped[User] = relationship(back_populates="receipts")
+    trip: Mapped[Trip | None] = relationship(back_populates="receipts")
     items: Mapped[list[ReceiptItem]] = relationship(
         back_populates="receipt",
         cascade="all, delete-orphan",

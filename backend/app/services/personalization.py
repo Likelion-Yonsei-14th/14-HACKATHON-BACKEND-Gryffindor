@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.constants import DEMO_USER_ID
+from app.domain.enums import RefundMethod
 from app.errors import AppError
 from app.models.personalization import Flight, Receipt, ReceiptItem, User, WishlistItem
 from app.models.product import Product
@@ -66,8 +67,11 @@ class PersonalizationService:
         self,
         image_bytes: bytes,
         provider: DocumentExtractionProvider,
+        trip_id: UUID | None = None,
     ) -> Receipt:
         self.user()
+        if trip_id is not None and self._trips.get(DEMO_USER_ID, trip_id) is None:
+            raise AppError(404, "TRIP_NOT_FOUND", "Trip was not found.")
         try:
             extraction = await provider.extract_receipt(image_bytes)
         except DocumentExtractionProviderError as exc:
@@ -76,6 +80,7 @@ class PersonalizationService:
         products_by_name = _products_by_exact_name(self._products.list_all())
         receipt = Receipt(
             user_id=DEMO_USER_ID,
+            trip_id=trip_id,
             store_name=extraction.store_name,
             purchased_at=_as_utc(extraction.purchased_at),
             total_amount=extraction.total_amount,
@@ -145,6 +150,19 @@ class PersonalizationService:
 
     def list_purchases(self) -> list[Receipt]:
         return self.list_receipts()
+
+    def update_purchase_refund_method(
+        self,
+        purchase_id: UUID,
+        refund_method: RefundMethod,
+    ) -> Receipt:
+        self.user()
+        purchase = self._personalization.get_receipt(DEMO_USER_ID, purchase_id)
+        if purchase is None:
+            raise AppError(404, "PURCHASE_NOT_FOUND", "Purchase was not found.")
+        purchase.refund_method = refund_method
+        self._db.commit()
+        return purchase
 
     def latest_flight(self) -> Flight | None:
         self.user()

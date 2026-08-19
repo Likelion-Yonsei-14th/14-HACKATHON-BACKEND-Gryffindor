@@ -19,7 +19,9 @@ class PriceQuote:
 
 
 class PricingService:
-    _INSTANT_REFUND_LIMIT_KRW = 5_000_000
+    # Product-card context only knows an individual product price. This is a potential
+    # eligibility hint; purchase cumulative limits are evaluated with transaction data.
+    _INSTANT_REFUND_TRANSACTION_LIMIT_KRW = 1_000_000
 
     def __init__(self, exchange_rates: ExchangeRateService) -> None:
         self._exchange_rates = exchange_rates
@@ -52,7 +54,7 @@ class PricingService:
             converted_currency=currency,
             instant_refund_eligible=(
                 product.tax_refund_supported
-                and product.retail_price_krw <= self._INSTANT_REFUND_LIMIT_KRW
+                and product.retail_price_krw < self._INSTANT_REFUND_TRANSACTION_LIMIT_KRW
             ),
         )
 

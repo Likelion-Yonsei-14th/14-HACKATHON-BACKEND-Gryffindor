@@ -168,6 +168,8 @@ def test_receipt_analysis_saves_items_and_only_exact_product_mapping(
     assert response.status_code == 201
     payload = response.json()
     assert payload["storeName"] == "Demo Department Store"
+    assert payload["tripId"] is None
+    assert payload["refundMethod"] == "UNKNOWN"
     assert payload["purchasedAt"] == "2026-08-19T05:30:00Z"
     assert {item["productId"] for item in payload["items"]} == {"test_outer_001", None}
     assert db_session.scalar(select(func.count()).select_from(Receipt)) == 1

@@ -9,6 +9,8 @@ from pydantic.alias_generators import to_camel
 from app.domain.enums import (
     PurchaseState,
     RecognitionStatus,
+    RefundChecklistStatus,
+    RefundMethod,
     ReservationStatus,
     SessionStatus,
     TriggerType,
@@ -146,6 +148,8 @@ class ReceiptItemResponse(ApiModel):
 
 class ReceiptResponse(ApiModel):
     id: UUID
+    trip_id: UUID | None
+    refund_method: RefundMethod
     store_name: str | None
     purchased_at: datetime | None
     total_amount: int | None
@@ -194,12 +198,32 @@ class PurchaseItemResponse(ApiModel):
 
 class PurchaseResponse(ApiModel):
     id: UUID
+    trip_id: UUID | None
+    refund_method: RefundMethod
     store_name: str | None
     purchased_at: datetime | None
     total_amount: int | None
     currency: str | None
     items: list[PurchaseItemResponse]
     created_at: datetime
+
+
+class PurchaseRefundMethodPatchRequest(ApiModel):
+    refund_method: RefundMethod
+
+
+class RefundChecklistItemResponse(ApiModel):
+    id: str
+    title: str
+    description: str
+    required: bool
+
+
+class RefundChecklistResponse(ApiModel):
+    trip_id: UUID
+    status: RefundChecklistStatus
+    items: list[RefundChecklistItemResponse]
+    notice: str | None
 
 
 class PurchasedProductResponse(ApiModel):

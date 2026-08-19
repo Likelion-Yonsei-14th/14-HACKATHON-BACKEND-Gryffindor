@@ -61,6 +61,23 @@ class PersonalizationRepository:
         )
         return list(self._db.scalars(statement).all())
 
+    def get_receipt(self, user_id: int, receipt_id: UUID) -> Receipt | None:
+        statement = (
+            select(Receipt)
+            .options(selectinload(Receipt.items).joinedload(ReceiptItem.product))
+            .where(Receipt.id == receipt_id, Receipt.user_id == user_id)
+        )
+        return self._db.scalar(statement)
+
+    def list_trip_receipts(self, user_id: int, trip_id: UUID) -> list[Receipt]:
+        statement = (
+            select(Receipt)
+            .options(selectinload(Receipt.items).joinedload(ReceiptItem.product))
+            .where(Receipt.user_id == user_id, Receipt.trip_id == trip_id)
+            .order_by(Receipt.created_at, Receipt.id)
+        )
+        return list(self._db.scalars(statement).all())
+
     def add_flight(self, flight: Flight) -> Flight:
         self._db.add(flight)
         self._db.flush()

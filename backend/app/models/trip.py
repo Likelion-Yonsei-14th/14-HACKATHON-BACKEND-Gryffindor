@@ -23,7 +23,7 @@ from app.domain.enums import ReservationStatus
 from app.models.common import utc_now
 
 if TYPE_CHECKING:
-    from app.models.personalization import Flight, User
+    from app.models.personalization import Flight, Receipt, User
     from app.models.product import Product
     from app.models.store import Store
 
@@ -58,6 +58,7 @@ class Trip(Base):
 
     user: Mapped[User] = relationship(back_populates="trips")
     flights: Mapped[list[Flight]] = relationship(back_populates="trip")
+    receipts: Mapped[list[Receipt]] = relationship(back_populates="trip")
     hotel: Mapped[HotelStay | None] = relationship(
         back_populates="trip",
         cascade="all, delete-orphan",

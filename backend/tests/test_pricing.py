@@ -1,3 +1,4 @@
+import pytest
 from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
@@ -30,7 +31,33 @@ def test_pricing_uses_fixed_refund_and_cached_decimal_rate(db_session: Session) 
     assert str(quote.converted_estimated_refund_price) == "5129.41"
     assert quote.converted_amount == quote.converted_estimated_refund_price
     assert quote.converted_currency == "CNY"
-    assert quote.instant_refund_eligible is True
+    assert quote.instant_refund_eligible is False
+
+
+@pytest.mark.parametrize(
+    ("retail_price_krw", "expected"),
+    [(999_999, True), (1_000_000, False)],
+)
+def test_product_card_instant_refund_uses_strict_transaction_boundary(
+    db_session: Session,
+    retail_price_krw: int,
+    expected: bool,
+) -> None:
+    product = Product(
+        product_id=f"boundary_{retail_price_krw}",
+        sku=f"BOUNDARY-{retail_price_krw}",
+        brand="Boundary",
+        name="Boundary Product",
+        category="other",
+        image_url="https://example.com/boundary.jpg",
+        retail_price_krw=retail_price_krw,
+        estimated_refund_krw=0,
+        tax_refund_supported=True,
+    )
+
+    quote = PricingService(ExchangeRateService(db_session)).quote(product, "CNY")
+
+    assert quote.instant_refund_eligible is expected
 
 
 def test_pricing_uses_zero_seed_refund_for_unsupported_product(

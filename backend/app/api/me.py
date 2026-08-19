@@ -23,6 +23,7 @@ from app.schemas.api import (
     ProductResponse,
     PurchasedProductResponse,
     PurchaseItemResponse,
+    PurchaseRefundMethodPatchRequest,
     PurchaseResponse,
     ReceiptItemResponse,
     ReceiptResponse,
@@ -123,9 +124,10 @@ async def analyze_receipt(
     db: DbSession,
     settings: AppSettings,
     provider: DocumentProviderDependency,
+    trip_id: Annotated[UUID | None, Form(alias="tripId")] = None,
 ) -> ReceiptResponse:
     image_bytes = await read_valid_image(image, settings.recognition_max_image_bytes)
-    receipt = await PersonalizationService(db).analyze_receipt(image_bytes, provider)
+    receipt = await PersonalizationService(db).analyze_receipt(image_bytes, provider, trip_id)
     logger.info(
         "receipt_extraction_completed receipt_id=%s provider=%s image_bytes=%d items=%d",
         receipt.id,
@@ -140,6 +142,23 @@ async def analyze_receipt(
 def list_purchases(db: DbSession) -> list[PurchaseResponse]:
     purchases = PersonalizationService(db).list_purchases()
     return [_purchase_response(purchase) for purchase in purchases]
+
+
+@router.patch(
+    "/purchases/{purchaseId}",
+    response_model=PurchaseResponse,
+    responses={404: {"model": ErrorResponse}},
+)
+def update_purchase_refund_method(
+    purchase_id: Annotated[UUID, Path(alias="purchaseId")],
+    payload: PurchaseRefundMethodPatchRequest,
+    db: DbSession,
+) -> PurchaseResponse:
+    purchase = PersonalizationService(db).update_purchase_refund_method(
+        purchase_id,
+        payload.refund_method,
+    )
+    return _purchase_response(purchase)
 
 
 @router.post(
@@ -268,6 +287,8 @@ def _product_response(product: Product) -> ProductResponse:
 def _receipt_response(receipt: Receipt) -> ReceiptResponse:
     return ReceiptResponse(
         id=receipt.id,
+        trip_id=receipt.trip_id,
+        refund_method=receipt.refund_method,
         store_name=receipt.store_name,
         purchased_at=receipt.purchased_at,
         total_amount=receipt.total_amount,
@@ -288,6 +309,8 @@ def _receipt_response(receipt: Receipt) -> ReceiptResponse:
 def _purchase_response(purchase: Receipt) -> PurchaseResponse:
     return PurchaseResponse(
         id=purchase.id,
+        trip_id=purchase.trip_id,
+        refund_method=purchase.refund_method,
         store_name=purchase.store_name,
         purchased_at=purchase.purchased_at,
         total_amount=purchase.total_amount,
