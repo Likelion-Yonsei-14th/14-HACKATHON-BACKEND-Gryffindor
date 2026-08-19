@@ -145,7 +145,7 @@ def test_receipt_analysis_saves_items_and_only_exact_product_mapping(
                 total_amount=169_000,
                 items=[
                     ReceiptItemExtraction(
-                        name=mapped_product.name,
+                        name=f"  {mapped_product.name.upper()}  ",
                         quantity=1,
                         price=159_000,
                     ),
@@ -169,10 +169,27 @@ def test_receipt_analysis_saves_items_and_only_exact_product_mapping(
     payload = response.json()
     assert payload["storeName"] == "Demo Department Store"
     assert payload["purchasedAt"] == "2026-08-19T05:30:00Z"
-    assert payload["items"][0]["productId"] == "test_outer_001"
-    assert payload["items"][1]["productId"] is None
+    assert {item["productId"] for item in payload["items"]} == {"test_outer_001", None}
     assert db_session.scalar(select(func.count()).select_from(Receipt)) == 1
     assert db_session.scalar(select(func.count()).select_from(ReceiptItem)) == 2
+
+    purchases = client.get("/api/v1/me/purchases")
+    assert purchases.status_code == 200
+    assert len(purchases.json()) == 1
+    purchase_items = purchases.json()[0]["items"]
+    matched = next(item for item in purchase_items if item["product"] is not None)
+    unmatched = next(item for item in purchase_items if item["product"] is None)
+    assert matched["product"]["productId"] == "test_outer_001"
+    assert matched["fallbackProductName"] is None
+    assert unmatched["fallbackProductName"] == "Unmapped Receipt Product"
+
+    my_page = client.get("/api/v1/me").json()
+    assert "receipts" not in my_page
+    assert len(my_page["purchasedProducts"]) == 2
+    assert any(
+        item["fallbackProductName"] == "Unmapped Receipt Product"
+        for item in my_page["purchasedProducts"]
+    )
 
 
 def test_receipt_provider_failure_is_503_and_does_not_save(
@@ -193,6 +210,45 @@ def test_receipt_provider_failure_is_503_and_does_not_save(
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "DOCUMENT_EXTRACTION_PROVIDER_ERROR"
     assert db_session.scalar(select(func.count()).select_from(Receipt)) == 0
+
+
+def test_purchase_capture_keeps_unmatched_item_when_store_is_unreadable(
+    client: TestClient,
+    test_app: FastAPI,
+) -> None:
+    override_document_provider(
+        test_app,
+        FakeDocumentProvider(
+            receipts=[
+                ReceiptExtraction(
+                    store_name=None,
+                    purchased_at=None,
+                    currency=None,
+                    total_amount=None,
+                    items=[
+                        ReceiptItemExtraction(
+                            name="준지_남성",
+                            quantity=None,
+                            price=None,
+                        )
+                    ],
+                )
+            ]
+        ),
+    )
+
+    analyzed = client.post(
+        "/api/v1/me/receipts/analyze",
+        files={"image": ("receipt.jpg", jpeg_bytes(), "image/jpeg")},
+    )
+    purchases = client.get("/api/v1/me/purchases")
+
+    assert analyzed.status_code == 201
+    assert analyzed.json()["storeName"] is None
+    assert purchases.status_code == 200
+    assert purchases.json()[0]["storeName"] is None
+    assert purchases.json()[0]["items"][0]["product"] is None
+    assert purchases.json()[0]["items"][0]["fallbackProductName"] == "준지_남성"
 
 
 def test_receipt_rejects_invalid_image(
@@ -219,14 +275,18 @@ def test_flight_analysis_and_my_page_use_latest_flight(
             FlightExtraction(
                 departure_airport="ICN",
                 arrival_airport="LAX",
+                terminal="T2",
                 flight_number="KE017",
                 departure_at=datetime.fromisoformat("2026-08-20T10:00:00+09:00"),
+                arrival_at=datetime.fromisoformat("2026-08-20T05:00:00-07:00"),
             ),
             FlightExtraction(
                 departure_airport="ICN",
                 arrival_airport="JFK",
+                terminal="T2",
                 flight_number="KE081",
                 departure_at=datetime.fromisoformat("2026-08-21T10:00:00+09:00"),
+                arrival_at=datetime.fromisoformat("2026-08-21T11:00:00-04:00"),
             ),
         ]
     )
@@ -245,9 +305,67 @@ def test_flight_analysis_and_my_page_use_latest_flight(
     assert first.status_code == 201
     assert second.status_code == 201
     assert second.json()["departureAt"] == "2026-08-21T01:00:00Z"
+    assert second.json()["arrivalAt"] == "2026-08-21T15:00:00Z"
+    assert second.json()["airportArrivalAt"] is None
     assert my_page.status_code == 200
     assert my_page.json()["flight"]["flightNumber"] == "KE081"
     assert my_page.json()["user"] == {"id": 1, "name": "Demo User"}
+
+
+def test_flight_analysis_allows_missing_fields_and_manual_patch(
+    client: TestClient,
+    test_app: FastAPI,
+) -> None:
+    provider = FakeDocumentProvider(
+        flights=[
+            FlightExtraction(
+                departure_airport=None,
+                arrival_airport=None,
+                terminal=None,
+                flight_number=None,
+                departure_at=None,
+                arrival_at=None,
+            )
+        ]
+    )
+    override_document_provider(test_app, provider)
+
+    analyzed = client.post(
+        "/api/v1/me/flights/analyze",
+        files={"image": ("flight.jpg", jpeg_bytes(), "image/jpeg")},
+    )
+
+    assert analyzed.status_code == 201
+    assert analyzed.json()["departureAirport"] is None
+    assert analyzed.json()["arrivalAt"] is None
+    assert analyzed.json()["airportArrivalAt"] is None
+
+    flight_id = analyzed.json()["id"]
+    updated = client.patch(
+        f"/api/v1/me/flights/{flight_id}",
+        json={
+            "departureAirport": "ICN",
+            "arrivalAirport": "KUL",
+            "terminal": "T2",
+            "flightNumber": "SQ607",
+            "departureAt": "2026-08-21T10:00:00+09:00",
+            "arrivalAt": "2026-08-21T13:30:00+08:00",
+            "airportArrivalAt": "2026-08-21T07:00:00+09:00",
+        },
+    )
+
+    assert updated.status_code == 200
+    assert updated.json()["terminal"] == "T2"
+    assert updated.json()["departureAt"] == "2026-08-21T01:00:00Z"
+    assert updated.json()["arrivalAt"] == "2026-08-21T05:30:00Z"
+    assert updated.json()["airportArrivalAt"] == "2026-08-20T22:00:00Z"
+
+    missing = client.patch(
+        "/api/v1/me/flights/99999999-0000-0000-0000-000000000999",
+        json={"terminal": "T1"},
+    )
+    assert missing.status_code == 404
+    assert missing.json()["error"]["code"] == "FLIGHT_NOT_FOUND"
 
 
 def _seed_recommendation_history(db: Session) -> None:
@@ -290,6 +408,14 @@ def _seed_recommendation_history(db: Session) -> None:
             product=products["demo_mouse_001"],
             quantity=1,
             price=25_000,
+        )
+    )
+    receipt.items.append(
+        ReceiptItem(
+            product_name="준지_남성",
+            product=None,
+            quantity=1,
+            price=621_000,
         )
     )
     db.add(receipt)
@@ -341,6 +467,16 @@ def test_recommendation_context_contains_all_history_and_only_db_candidates(
     assert context.viewed_products[0].product_id == "demo_perfume_001"
     assert context.viewed_products[0].observation_count == 3
     assert context.purchased_product_ids == ["demo_mouse_001"]
+    matched_purchase = next(
+        item for item in context.purchased_products if item.product_id == "demo_mouse_001"
+    )
+    unmatched_purchase = next(
+        item for item in context.purchased_products if item.product_id is None
+    )
+    assert matched_purchase.name is not None
+    assert matched_purchase.brand is not None
+    assert unmatched_purchase.fallback_product_name == "준지_남성"
+    assert unmatched_purchase.store_name == "Demo Store"
     assert context.latest_flight is not None
     assert context.latest_flight.arrival_airport == "JFK"
     candidate_ids = {product.product_id for product in context.candidate_products}
@@ -431,6 +567,7 @@ def test_recommendation_tolerates_missing_personalization_data(
     assert context.wishlist_product_ids == []
     assert context.viewed_products == []
     assert context.purchased_product_ids == []
+    assert context.purchased_products == []
     assert context.latest_flight is None
 
 
@@ -475,8 +612,10 @@ def test_b5_api_e2e_flow_with_fake_openai_providers(
             FlightExtraction(
                 departure_airport="ICN",
                 arrival_airport="JFK",
+                terminal=None,
                 flight_number="KE081",
                 departure_at=datetime.fromisoformat("2026-08-21T10:00:00+09:00"),
+                arrival_at=None,
             )
         ],
     )
@@ -549,6 +688,8 @@ def test_b5_api_e2e_flow_with_fake_openai_providers(
     my_page_response = client.get("/api/v1/me")
     assert my_page_response.status_code == 200
     assert my_page_response.json()["wishlist"][0]["productId"] == "test_outer_001"
-    assert my_page_response.json()["receipts"][0]["items"][0]["productId"] == ("test_outer_002")
+    assert my_page_response.json()["purchasedProducts"][0]["product"]["productId"] == (
+        "test_outer_002"
+    )
     assert my_page_response.json()["flight"]["flightNumber"] == "KE081"
     assert client.delete("/api/v1/me/wishlist/test_outer_001").status_code == 204

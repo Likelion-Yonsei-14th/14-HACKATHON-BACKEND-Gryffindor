@@ -80,12 +80,17 @@ async def test_receipt_and_flight_use_one_structured_document_provider() -> None
     assert receipt_call["text_format"] is ReceiptExtraction
     assert receipt_call["reasoning"] == {"effort": "none"}
     assert receipt_call["input"][1]["content"][1]["detail"] == "high"
+    receipt_prompt = receipt_call["input"][0]["content"][0]["text"]
+    assert "Do not correct or reconcile" in receipt_prompt
+    assert "refund-processing information" in receipt_prompt
 
     flight_output = FlightExtraction(
         departure_airport="ICN",
         arrival_airport="JFK",
+        terminal="T2",
         flight_number="KE081",
         departure_at=datetime.fromisoformat("2026-08-21T10:00:00+09:00"),
+        arrival_at=datetime.fromisoformat("2026-08-21T11:00:00-04:00"),
     )
     flight_responses = FakeResponses(flight_output)
     flight = await document_provider_with(flight_responses).extract_flight(
@@ -94,6 +99,8 @@ async def test_receipt_and_flight_use_one_structured_document_provider() -> None
 
     assert flight == flight_output
     assert flight_responses.calls[0]["text_format"] is FlightExtraction
+    flight_prompt = flight_responses.calls[0]["input"][0]["content"][0]["text"]
+    assert "airport arrival" in flight_prompt
 
 
 @pytest.mark.anyio
@@ -128,6 +135,7 @@ def _recommendation_context() -> RecommendationContext:
         wishlist_product_ids=["demo_perfume_001"],
         viewed_products=[],
         purchased_product_ids=[],
+        purchased_products=[],
         latest_flight=None,
         candidate_stores=[
             CandidateStoreContext(
