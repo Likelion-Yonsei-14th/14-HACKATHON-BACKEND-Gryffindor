@@ -572,3 +572,131 @@ Response `200`:
 
 Document/Recommendation OpenAI timeout, API failure, structured response validation 실패는 각각
 `503 DOCUMENT_EXTRACTION_PROVIDER_ERROR`, `503 RECOMMENDATION_PROVIDER_ERROR`로 변환한다.
+
+---
+
+## 13. B6 Trip Shopping
+
+모든 B6 API는 인증 없이 Demo User(`id=1`) 소유 데이터만 다룬다. 기존 B5 endpoint와
+response field는 유지한다.
+
+### Trip
+
+```http
+POST  /api/v1/me/trips
+GET   /api/v1/me/trips
+GET   /api/v1/me/trips/{tripId}
+PATCH /api/v1/me/trips/{tripId}
+```
+
+Trip 생성/수정 body는 `title`, `destinationCity`, `destinationCountry`, `startsAt`, `endsAt`을
+사용한다. 목록은 `{"trips": [Trip]}`를 반환하고, 상세는 다음 container를 반환한다.
+
+```json
+{
+  "trip": {
+    "id": "uuid",
+    "title": "서울 쇼핑 여행",
+    "destinationCity": "Seoul",
+    "destinationCountry": "KR",
+    "startsAt": "2026-08-19T15:00:00Z",
+    "endsAt": "2026-08-23T14:59:00Z",
+    "createdAt": "2026-08-19T00:00:00Z",
+    "updatedAt": "2026-08-19T00:00:00Z"
+  },
+  "flights": [],
+  "hotel": null,
+  "visitReservations": []
+}
+```
+
+존재하지 않거나 Demo User 소유가 아닌 Trip은 `404 TRIP_NOT_FOUND`다.
+
+### Flight 연결
+
+기존 `POST /api/v1/me/flights/analyze` multipart에 optional `tripId` field를 추가한다.
+응답에는 nullable `tripId`를 추가한다. 생략하면 기존처럼 독립 Flight로 저장한다.
+
+### Hotel
+
+```http
+PUT /api/v1/me/trips/{tripId}/hotel
+GET /api/v1/me/trips/{tripId}/hotel
+```
+
+PUT은 Trip당 한 HotelStay를 upsert한다. `name` 외에 `address`, `latitude`, `longitude`,
+`checkInAt`, `checkOutAt`은 nullable이다. 좌표가 없더라도 저장하며 거리 계산만 생략한다.
+
+### Trip Feed
+
+`GET /api/v1/me/trips/{tripId}/feed`는 이 endpoint에서만 OpenAI 추천을 생성한다.
+
+```json
+{
+  "trip": {"id": "uuid", "title": "서울 쇼핑 여행"},
+  "recommendations": [
+    {
+      "product": {
+        "productId": "demo_bag_001",
+        "sku": "DEMO-BAG-001",
+        "brand": "Demo Luxury",
+        "name": "Demo Bag",
+        "category": "bag",
+        "imageUrl": "https://example.com/bag.jpg"
+      },
+      "reason": "관심 상품이며 아직 구매하지 않은 상품입니다.",
+      "stores": [
+        {
+          "storeId": "uuid",
+          "name": "Seoul Center Department Store A",
+          "type": "DEPARTMENT_STORE",
+          "distanceFromHotelKm": 1.3,
+          "airportCode": null,
+          "terminal": null,
+          "hasWishlistItems": true,
+          "reason": "숙소에서 가깝고 관심 상품을 취급합니다."
+        }
+      ]
+    }
+  ]
+}
+```
+
+서버가 DB 관계, 구매 exact product 제외, Haversine 거리, 공항/터미널 match를 계산한 뒤
+Product 최대 20개, Store 최대 10개만 provider에 전달한다. Provider 결과의 Store/Product ID와
+StoreProduct 관계는 기존과 같이 allowlist 검증한다.
+
+### Store Wishlist Intersection
+
+`GET /api/v1/me/stores/{storeId}/wishlist-products`는 Demo User Wishlist와 StoreProduct의
+교집합을 `[{"productId": "...", "name": "..."}]`로 반환한다.
+
+### Visit Reservation
+
+```http
+POST   /api/v1/me/trips/{tripId}/visit-reservations
+GET    /api/v1/me/trips/{tripId}/visit-reservations
+DELETE /api/v1/me/visit-reservations/{reservationId}
+```
+
+POST body는 `storeId`, timezone-aware `scheduledAt`, `productIds`를 받는다. `productIds`는 빈
+배열을 허용한다. 각 product는 Demo User Wishlist와 해당 Store의 StoreProduct에 모두 있어야
+하며, 아니면 `400 INVALID_RESERVATION_PRODUCTS`다. DELETE는 row를 지우지 않고 status를
+`CANCELLED`로 전환한 뒤 `204`를 반환한다.
+
+```json
+{
+  "id": "uuid",
+  "tripId": "uuid",
+  "store": {"storeId": "uuid", "name": "Demo Store"},
+  "scheduledAt": "2026-08-21T06:00:00Z",
+  "products": [],
+  "status": "RESERVED",
+  "createdAt": "2026-08-19T00:00:00Z"
+}
+```
+
+### My Page 확장
+
+기존 `GET /api/v1/me`의 `user`, `wishlist`, `purchasedProducts`, `flight`를 유지하고
+`trips: [{id, title, startsAt, endsAt}]` summary를 추가한다.

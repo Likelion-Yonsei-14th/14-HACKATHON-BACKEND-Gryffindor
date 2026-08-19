@@ -237,3 +237,62 @@ store_products
 추천 후보와 OpenAI 결과의 Store/Product 소속 검증은 이 관계를 기준으로 한다. B5 migration은
 기존 demo Catalog가 바로 동작하도록 현재 Store와 Product 조합을 채우며, product seed도 같은
 관계를 idempotent하게 보완한다. 기존 Store/Product 공개 식별자는 변경하지 않는다.
+
+## 12. B6 Trip Shopping
+
+```text
+trips
+- id UUID / PK
+- user_id INTEGER / FK
+- title VARCHAR
+- destination_city VARCHAR NULL
+- destination_country VARCHAR NULL
+- starts_at TIMESTAMPTZ NULL
+- ends_at TIMESTAMPTZ NULL
+- created_at TIMESTAMPTZ
+- updated_at TIMESTAMPTZ
+
+hotel_stays
+- id UUID / PK
+- trip_id UUID / FK / UNIQUE
+- name VARCHAR
+- address TEXT NULL
+- latitude DOUBLE PRECISION NULL
+- longitude DOUBLE PRECISION NULL
+- check_in_at TIMESTAMPTZ NULL
+- check_out_at TIMESTAMPTZ NULL
+- created_at TIMESTAMPTZ
+- updated_at TIMESTAMPTZ
+
+flights
++ trip_id UUID / FK NULL
+
+stores
++ address TEXT NULL
++ latitude DOUBLE PRECISION NULL
++ longitude DOUBLE PRECISION NULL
++ terminal VARCHAR NULL
++ opening_hours TEXT NULL
+```
+
+Store의 기존 `type`, `city`, `airport_code`를 재사용한다. 기존 seed row와 공개 ID는 유지하고,
+B6 seed는 `DEPARTMENT_STORE`, `DUTY_FREE` type을 사용한다.
+
+```text
+visit_reservations
+- id UUID / PK
+- user_id INTEGER / FK
+- trip_id UUID / FK
+- store_id UUID / FK
+- scheduled_at TIMESTAMPTZ
+- status VARCHAR(RESERVED, CANCELLED)
+- created_at TIMESTAMPTZ
+- updated_at TIMESTAMPTZ
+
+visit_reservation_products
+- reservation_id UUID / FK / PK
+- product_id UUID / FK / PK
+```
+
+예약 상품은 생성 시 Wishlist와 StoreProduct 교집합인지 검증한다. 추천 자체는 저장하지 않고
+Trip Feed 요청 시 계산한다.
