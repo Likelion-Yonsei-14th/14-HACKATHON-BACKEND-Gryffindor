@@ -38,7 +38,9 @@ products
 `20260817_0006` 적용 시 기존 session row는 demo `MCM Seoul`로 backfill한 뒤
 `store_id`를 `NOT NULL`로 전환한다.
 
-`instant_refund_eligible`를 product의 영구 속성으로 단정하지 않는다. 최종 여부는 RefundPolicyProvider에서 현재 정책/조건을 이용해 계산한다.
+`instant_refund_eligible`를 product의 영구 속성으로 단정하지 않는다. Product Card에서는
+`tax_refund_supported`와 개별 상품 가격 1,000,000원 미만 조건만으로 잠재 가능성을 계산하고,
+Purchase의 실제 거래 총액과 누적 금액은 Refund Checklist에서 별도로 계산한다.
 
 MVP Mock Mode에서는 metadata에 테스트용 조건을 둘 수 있다.
 
@@ -190,6 +192,8 @@ UNIQUE(user_id, product_id)
 receipts
 - id UUID / PK
 - user_id INTEGER / FK
+- trip_id UUID / FK NULL
+- refund_method VARCHAR(16) / UNKNOWN | IMMEDIATE | DOWNTOWN | AIRPORT
 - store_name VARCHAR NULL
 - purchased_at TIMESTAMPTZ NULL
 - total_amount BIGINT NULL
@@ -225,6 +229,11 @@ flights
 
 `airport_arrival_at`은 OCR 결과가 아니라 사용자가 직접 저장하는 여행 계획 값이다. 추천은
 `created_at`이 가장 최신인 Flight를 사용한다.
+
+`receipts.trip_id`를 생략한 기존 Purchase Capture 흐름과 기존 row는 그대로 유지한다.
+`refund_method`의 기존/default 값은 `UNKNOWN`이며 금액 조건만으로 실제 환급 방식을 자동
+변경하지 않는다. Refund Checklist와 즉시환급 잠재 금액 조건은 요청 시 계산하며 별도
+체크리스트 상태를 저장하지 않는다.
 
 ## 11. Store Product Allowlist
 

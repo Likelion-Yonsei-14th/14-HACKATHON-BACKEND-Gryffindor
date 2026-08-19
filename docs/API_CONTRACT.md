@@ -165,7 +165,7 @@ Backend는 `occupancyRatio`를 다시 CV로 계산하지 않는다. 범위 valid
       "convertedEstimatedRefundPrice": "5129.41",
       "convertedAmount": "5129.41",
       "convertedCurrency": "CNY",
-      "instantRefundEligible": true,
+      "instantRefundEligible": false,
       "pricingMode": "MOCK"
     },
     "observation": {
@@ -228,7 +228,7 @@ Response:
         "convertedEstimatedRefundPrice": "5129.41",
         "convertedAmount": "5129.41",
         "convertedCurrency": "CNY",
-        "instantRefundEligible": true,
+        "instantRefundEligible": false,
         "pricingMode": "MOCK"
       },
       "purchaseState": "UNSET",
@@ -245,6 +245,9 @@ Response:
 - `convertedRetailPrice`, `convertedEstimatedRefund`, `convertedEstimatedRefundPrice`는 세션의
   `currency`와 `ExchangeRateService`의 DB 캐시 환율로 계산한 Decimal 문자열이다.
 - 기존 Android 호환성을 위해 `convertedAmount`는 `convertedEstimatedRefundPrice`와 같은 값을 유지한다.
+- 기존 `instantRefundEligible` 필드명은 유지하되 Product Card에서는
+  `taxRefundSupported && retailPriceKrw < 1,000,000`인 개별 상품 기준 잠재 가능성만 뜻한다.
+  실제 거래 총액, 누적 금액, 실제 환급 방식은 Purchase context에서 별도로 판단한다.
 - 상품 API 요청은 외부 환율 API를 호출하지 않는다.
 - 환율 캐시가 없더라도 KRW 가격과 recognition 결과는 정상 반환한다.
   `convertedRetailPrice`, `convertedEstimatedRefund`, `convertedEstimatedRefundPrice`,
@@ -400,6 +403,7 @@ Response:
 - `DOCUMENT_EXTRACTION_PROVIDER_ERROR`
 - `RECOMMENDATION_PROVIDER_ERROR`
 - `FLIGHT_NOT_FOUND`
+- `PURCHASE_NOT_FOUND`
 
 ---
 
@@ -437,13 +441,20 @@ Response `200`:
 
 ### `POST /api/v1/me/receipts/analyze`
 
-Content-Type: `multipart/form-data`, field: `image` (JPEG/PNG)
+Content-Type: `multipart/form-data`
+
+Fields:
+
+- `image`: JPEG/PNG, required
+- `tripId`: Trip UUID, optional. 생략하면 기존처럼 Trip에 연결되지 않은 구매로 저장한다.
 
 Response `201`:
 
 ```json
 {
   "id": "uuid",
+  "tripId": "uuid",
+  "refundMethod": "UNKNOWN",
   "storeName": "THE HYUNDAI SEOUL",
   "purchasedAt": "2026-08-19T05:30:00Z",
   "totalAmount": 850000,
@@ -476,6 +487,8 @@ Response `200`:
 [
   {
     "id": "uuid",
+    "tripId": "uuid",
+    "refundMethod": "AIRPORT",
     "storeName": "THE HYUNDAI SEOUL",
     "purchasedAt": "2026-08-19T05:30:00Z",
     "totalAmount": 1093450,
@@ -497,6 +510,25 @@ Response `200`:
 Catalog 매칭에 성공하면 `product`에 기존 Product DTO를 반환하고
 `fallbackProductName`은 `null`이다. 매칭에 실패하면 `product`는 `null`이고 OCR에서 읽은
 상품명을 `fallbackProductName`에 그대로 반환한다.
+
+Purchase response에는 기존 필드를 유지하면서 nullable `tripId`와 non-null
+`refundMethod`(`UNKNOWN` | `IMMEDIATE` | `DOWNTOWN` | `AIRPORT`)을 추가한다.
+
+### `PATCH /api/v1/me/purchases/{purchaseId}`
+
+실제로 확인된 환급 방식을 구매 이벤트에 기록한다. 금액 조건만으로 환급 방식을 자동
+확정하지 않는다.
+
+Request:
+
+```json
+{
+  "refundMethod": "AIRPORT"
+}
+```
+
+Response `200`: 변경된 Purchase response. 존재하지 않거나 Demo User 소유가 아니면
+`404 PURCHASE_NOT_FOUND`를 반환한다.
 
 ### `POST /api/v1/me/flights/analyze`
 
@@ -740,3 +772,68 @@ POST body는 `storeId`, timezone-aware `scheduledAt`, `productIds`를 받는다.
 
 기존 `GET /api/v1/me`의 `user`, `wishlist`, `purchasedProducts`, `flight`를 유지하고
 `trips: [{id, title, startsAt, endsAt}]` summary를 추가한다.
+
+---
+
+## 14. B7 Refund Checklist
+
+### `GET /api/v1/me/trips/{tripId}/refund-checklist`
+
+Demo User 소유 Trip에 연결된 Purchase와 해당 Trip의 최신 Flight를 사용하여 고정 규칙으로
+생성한다. OpenAI/LLM/RAG는 사용하지 않으며 체크 완료 여부는 Android local UI state로
+관리한다.
+
+Response `200`:
+
+```json
+{
+  "tripId": "uuid",
+  "status": "ACTION_REQUIRED",
+  "items": [
+    {
+      "id": "prepare-refund-documents",
+      "title": "환급 서류를 준비하세요",
+      "description": "구매 영수증과 환급 관련 판매확인서를 준비하세요.",
+      "required": true
+    },
+    {
+      "id": "prepare-purchased-goods",
+      "title": "구매 물품을 준비하세요",
+      "description": "출국 시 세관의 확인 요청에 대비해 구매 물품을 확인할 수 있도록 준비하세요.",
+      "required": true
+    },
+    {
+      "id": "customs-export-confirmation",
+      "title": "세관 반출 확인을 진행하세요",
+      "description": "출국 시 필요한 경우 세관의 반출 확인을 받으세요.",
+      "required": true
+    },
+    {
+      "id": "receive-refund",
+      "title": "환급을 받으세요",
+      "description": "반출 확인 후 이용 가능한 환급창구 또는 환급 절차를 이용하세요.",
+      "required": true
+    }
+  ],
+  "notice": null
+}
+```
+
+`status`는 `NO_ELIGIBLE_PURCHASES`, `IMMEDIATE_REFUND_ONLY`, `ACTION_REQUIRED` 중 하나다.
+현재 Catalog에 연결되고 `tax_refund_supported=true`인 상품이 하나 이상 포함된 Purchase만
+확인된 환급 대상 구매로 사용한다. OCR fallback 상품만 있는 Purchase는 환급 가능 여부를
+확정하지 않으며 전체 요청을 실패시키지 않는다.
+
+고정 규칙:
+
+- `IMMEDIATE` 구매만 있으면 별도 환급 수령 item 없이 `IMMEDIATE_REFUND_ONLY`를 반환한다.
+- `AIRPORT` 또는 `UNKNOWN`이 있으면 서류, 물품, 세관 반출 확인, 환급 절차 4개 item을 만든다.
+- `DOWNTOWN`은 이미 선환급을 받은 상태이므로 서류, 물품, 세관 반출 확인만 만든다.
+- 환급 방식이 섞이면 필요한 item의 합집합을 고정 순서로 반환하며 중복하지 않는다.
+- `purchasedAt`과 Trip Flight의 `departureAt`이 모두 있을 때 구매일로부터 3개월을 초과하면
+  `export-deadline-warning`을 최대 1개 추가한다. 날짜가 없으면 초과라고 단정하지 않는다.
+- 즉시환급 잠재 금액 조건은 Purchase의 KRW `totalAmount < 1,000,000`과 서버가 아는
+  즉시환급 누적 거래가액 `<= 5,000,000`을 사용한다. 이 계산은 실제 `refundMethod`를
+  변경하지 않으며 법적 확정 판정이 아니다.
+
+존재하지 않거나 Demo User 소유가 아닌 Trip은 `404 TRIP_NOT_FOUND`를 반환한다.
