@@ -66,6 +66,13 @@ class PersonalizationRepository:
         self._db.flush()
         return flight
 
+    def get_flight(self, user_id: int, flight_id: UUID) -> Flight | None:
+        statement = select(Flight).where(
+            Flight.id == flight_id,
+            Flight.user_id == user_id,
+        )
+        return self._db.scalar(statement)
+
     def latest_flight(self, user_id: int) -> Flight | None:
         statement = (
             select(Flight)

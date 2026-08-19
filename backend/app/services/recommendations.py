@@ -12,6 +12,7 @@ from app.providers.recommendation import (
     CandidateProductContext,
     CandidateStoreContext,
     FlightContext,
+    PurchasedProductContext,
     RecommendationContext,
     RecommendationProvider,
     RecommendationProviderError,
@@ -76,6 +77,18 @@ class RecommendationContextBuilder:
             }
         )
         purchased_id_set = set(purchased_ids)
+        purchased_products = [
+            PurchasedProductContext(
+                product_id=item.product.product_id if item.product is not None else None,
+                name=item.product.name if item.product is not None else None,
+                brand=item.product.brand if item.product is not None else None,
+                category=item.product.category if item.product is not None else None,
+                fallback_product_name=item.product_name if item.product is None else None,
+                store_name=receipt.store_name,
+            )
+            for receipt in receipts
+            for item in receipt.items
+        ]
 
         viewed_aggregates: dict[str, _ViewedAggregate] = {}
         for session_product in self._repository.list_recent_session_products(DEMO_USER_ID):
@@ -102,7 +115,10 @@ class RecommendationContextBuilder:
             FlightContext(
                 departure_airport=latest_flight.departure_airport,
                 arrival_airport=latest_flight.arrival_airport,
+                terminal=latest_flight.terminal,
                 departure_at=latest_flight.departure_at,
+                arrival_at=latest_flight.arrival_at,
+                airport_arrival_at=latest_flight.airport_arrival_at,
             )
             if latest_flight is not None
             else None
@@ -134,7 +150,14 @@ class RecommendationContextBuilder:
         }
 
         airport_codes: set[str] = (
-            {latest_flight.departure_airport, latest_flight.arrival_airport}
+            {
+                airport_code
+                for airport_code in (
+                    latest_flight.departure_airport,
+                    latest_flight.arrival_airport,
+                )
+                if airport_code is not None
+            }
             if latest_flight is not None
             else set()
         )
@@ -191,6 +214,7 @@ class RecommendationContextBuilder:
                 wishlist_product_ids=wishlist_ids,
                 viewed_products=viewed_products,
                 purchased_product_ids=purchased_ids,
+                purchased_products=purchased_products,
                 latest_flight=flight_context,
                 candidate_stores=candidate_stores,
                 candidate_products=candidate_products,

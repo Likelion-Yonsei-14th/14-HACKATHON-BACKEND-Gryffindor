@@ -1,6 +1,7 @@
 import logging
 from collections.abc import AsyncIterator
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Path, Response, UploadFile, status
 from sqlalchemy.orm import Session
@@ -8,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
 from app.errors import AppError
-from app.models.personalization import Flight, Receipt
+from app.models.personalization import Flight, Receipt, ReceiptItem
 from app.models.product import Product
 from app.providers.documents import DocumentExtractionProvider
 from app.providers.openai_documents import OpenAIDocumentExtractionProvider
@@ -16,9 +17,13 @@ from app.providers.openai_recommendation import OpenAIRecommendationProvider
 from app.providers.recommendation import RecommendationProvider
 from app.schemas.api import (
     ErrorResponse,
+    FlightPatchRequest,
     FlightResponse,
     MyPageResponse,
     ProductResponse,
+    PurchasedProductResponse,
+    PurchaseItemResponse,
+    PurchaseResponse,
     ReceiptItemResponse,
     ReceiptResponse,
     RecommendationProductResponse,
@@ -129,6 +134,12 @@ async def analyze_receipt(
     return _receipt_response(receipt)
 
 
+@router.get("/purchases", response_model=list[PurchaseResponse])
+def list_purchases(db: DbSession) -> list[PurchaseResponse]:
+    purchases = PersonalizationService(db).list_purchases()
+    return [_purchase_response(purchase) for purchase in purchases]
+
+
 @router.post(
     "/flights/analyze",
     response_model=FlightResponse,
@@ -148,6 +159,23 @@ async def analyze_flight(
         flight.id,
         type(provider).__name__,
         len(image_bytes),
+    )
+    return _flight_response(flight)
+
+
+@router.patch(
+    "/flights/{flightId}",
+    response_model=FlightResponse,
+    responses={404: {"model": ErrorResponse}},
+)
+def update_flight(
+    flight_id: Annotated[UUID, Path(alias="flightId")],
+    payload: FlightPatchRequest,
+    db: DbSession,
+) -> FlightResponse:
+    flight = PersonalizationService(db).update_flight(
+        flight_id,
+        payload.model_dump(exclude_unset=True),
     )
     return _flight_response(flight)
 
@@ -174,7 +202,7 @@ async def recommendations(
         len(result.stores),
         len(context.wishlist_product_ids),
         len(context.viewed_products),
-        len(context.purchased_product_ids),
+        len(context.purchased_products),
         context.latest_flight is not None,
         len(context.candidate_products),
     )
@@ -201,10 +229,15 @@ async def recommendations(
 def my_page(db: DbSession) -> MyPageResponse:
     service = PersonalizationService(db)
     user = service.user()
+    purchases = service.list_purchases()
     return MyPageResponse(
         user=UserResponse(id=user.id, name=user.name),
         wishlist=[_product_response(item.product) for item in service.list_wishlist()],
-        receipts=[_receipt_response(receipt) for receipt in service.list_receipts()],
+        purchased_products=[
+            _purchased_product_response(purchase, item)
+            for purchase in purchases
+            for item in purchase.items
+        ],
         flight=_optional_flight_response(service.latest_flight()),
     )
 
@@ -240,13 +273,53 @@ def _receipt_response(receipt: Receipt) -> ReceiptResponse:
     )
 
 
+def _purchase_response(purchase: Receipt) -> PurchaseResponse:
+    return PurchaseResponse(
+        id=purchase.id,
+        store_name=purchase.store_name,
+        purchased_at=purchase.purchased_at,
+        total_amount=purchase.total_amount,
+        currency=purchase.currency,
+        items=[
+            PurchaseItemResponse(
+                purchase_item_id=item.id,
+                product=_product_response(item.product) if item.product is not None else None,
+                fallback_product_name=(item.product_name if item.product is None else None),
+                quantity=item.quantity,
+                price=item.price,
+            )
+            for item in purchase.items
+        ],
+        created_at=purchase.created_at,
+    )
+
+
+def _purchased_product_response(
+    purchase: Receipt,
+    item: ReceiptItem,
+) -> PurchasedProductResponse:
+    return PurchasedProductResponse(
+        purchase_item_id=item.id,
+        product=_product_response(item.product) if item.product is not None else None,
+        fallback_product_name=item.product_name if item.product is None else None,
+        quantity=item.quantity,
+        price=item.price,
+        currency=purchase.currency,
+        store_name=purchase.store_name,
+        purchased_at=purchase.purchased_at,
+    )
+
+
 def _flight_response(flight: Flight) -> FlightResponse:
     return FlightResponse(
         id=flight.id,
         departure_airport=flight.departure_airport,
         arrival_airport=flight.arrival_airport,
+        terminal=flight.terminal,
         flight_number=flight.flight_number,
         departure_at=flight.departure_at,
+        arrival_at=flight.arrival_at,
+        airport_arrival_at=flight.airport_arrival_at,
         created_at=flight.created_at,
     )
 

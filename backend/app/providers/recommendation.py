@@ -22,10 +22,22 @@ class ViewedProductContext(RecommendationModel):
     store_ids: list[UUID]
 
 
+class PurchasedProductContext(RecommendationModel):
+    product_id: str | None
+    name: str | None
+    brand: str | None
+    category: str | None
+    fallback_product_name: str | None
+    store_name: str | None
+
+
 class FlightContext(RecommendationModel):
-    departure_airport: str
-    arrival_airport: str
+    departure_airport: str | None
+    arrival_airport: str | None
+    terminal: str | None
     departure_at: datetime | None
+    arrival_at: datetime | None
+    airport_arrival_at: datetime | None
 
 
 class CandidateStoreContext(RecommendationModel):
@@ -51,6 +63,7 @@ class RecommendationContext(RecommendationModel):
     wishlist_product_ids: list[str]
     viewed_products: list[ViewedProductContext]
     purchased_product_ids: list[str]
+    purchased_products: list[PurchasedProductContext]
     latest_flight: FlightContext | None
     candidate_stores: list[CandidateStoreContext]
     candidate_products: list[CandidateProductContext]

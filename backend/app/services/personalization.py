@@ -1,4 +1,6 @@
 from datetime import UTC, datetime
+from typing import Any
+from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -108,16 +110,35 @@ class PersonalizationService:
                 user_id=DEMO_USER_ID,
                 departure_airport=extraction.departure_airport,
                 arrival_airport=extraction.arrival_airport,
+                terminal=extraction.terminal,
                 flight_number=extraction.flight_number,
                 departure_at=_as_utc(extraction.departure_at),
+                arrival_at=_as_utc(extraction.arrival_at),
+                airport_arrival_at=None,
             )
         )
+        self._db.commit()
+        return flight
+
+    def update_flight(self, flight_id: UUID, changes: dict[str, Any]) -> Flight:
+        self.user()
+        flight = self._personalization.get_flight(DEMO_USER_ID, flight_id)
+        if flight is None:
+            raise AppError(404, "FLIGHT_NOT_FOUND", "Flight was not found.")
+
+        for field_name, value in changes.items():
+            if field_name in {"departure_at", "arrival_at", "airport_arrival_at"}:
+                value = _as_utc(value)
+            setattr(flight, field_name, value)
         self._db.commit()
         return flight
 
     def list_receipts(self) -> list[Receipt]:
         self.user()
         return self._personalization.list_receipts(DEMO_USER_ID)
+
+    def list_purchases(self) -> list[Receipt]:
+        return self.list_receipts()
 
     def latest_flight(self) -> Flight | None:
         self.user()

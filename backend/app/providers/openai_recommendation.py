@@ -68,6 +68,7 @@ returned storeId in its storeIds and in that candidate store's productIds.
 
 Never invent a store, product, storeId, or productId. Prioritize: (1) strong wishlist matches,
 (2) repeatedly viewed but not purchased products, (3) observed preferences, (4) travel and airport
-convenience, and (5) avoiding already purchased products. Produce concise personalized Korean
-reasons for every store and product. Return the provided structured output only.
+convenience, and (5) avoiding already purchased products. Unmatched purchased product names and
+store names describe user taste only and never authorize a new productId. Produce concise
+personalized Korean reasons for every store and product. Return the provided structured output only.
 """
