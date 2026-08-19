@@ -184,13 +184,13 @@ wishlist_items
 UNIQUE(user_id, product_id)
 ```
 
-## 10. Receipt / Flight
+## 10. Purchase Capture / Flight
 
 ```text
 receipts
 - id UUID / PK
 - user_id INTEGER / FK
-- store_name VARCHAR
+- store_name VARCHAR NULL
 - purchased_at TIMESTAMPTZ NULL
 - total_amount BIGINT NULL
 - currency VARCHAR(3) NULL
@@ -208,16 +208,23 @@ receipt_items
 flights
 - id UUID / PK
 - user_id INTEGER / FK
-- departure_airport VARCHAR(3)
-- arrival_airport VARCHAR(3)
+- departure_airport VARCHAR(3) NULL
+- arrival_airport VARCHAR(3) NULL
+- terminal VARCHAR NULL
 - flight_number VARCHAR NULL
 - departure_at TIMESTAMPTZ NULL
+- arrival_at TIMESTAMPTZ NULL
+- airport_arrival_at TIMESTAMPTZ NULL
 - created_at TIMESTAMPTZ
 ```
 
-Receipt 상품 매핑은 정규화된 상품명이 Catalog의 한 상품과 정확하고 유일하게 일치할 때만
-설정한다. OCR 이미지는 저장하지 않으므로 `image_path`는 `NULL`이다. 추천은 `created_at`이
-가장 최신인 Flight를 사용한다.
+테이블명은 기존 migration 호환성을 위해 유지하지만 `receipts`는 영수증 문서가 아니라 구매
+이벤트, `receipt_items`는 구매 상품을 뜻한다. 상품 매핑은 정규화된 상품명이 Catalog의 한
+상품과 정확하고 유일하게 일치할 때만 설정한다. 매칭되지 않은 실제 구매 상품도
+`product_name`을 보존하며, OCR 이미지는 저장하지 않으므로 `image_path`는 `NULL`이다.
+
+`airport_arrival_at`은 OCR 결과가 아니라 사용자가 직접 저장하는 여행 계획 값이다. 추천은
+`created_at`이 가장 최신인 Flight를 사용한다.
 
 ## 11. Store Product Allowlist
 

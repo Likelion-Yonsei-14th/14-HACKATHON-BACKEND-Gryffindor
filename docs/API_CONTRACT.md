@@ -365,6 +365,7 @@ Response:
 - `AIRPORT_CATALOG_UNAVAILABLE`
 - `DOCUMENT_EXTRACTION_PROVIDER_ERROR`
 - `RECOMMENDATION_PROVIDER_ERROR`
+- `FLIGHT_NOT_FOUND`
 
 ---
 
@@ -409,7 +410,7 @@ Response `201`:
 ```json
 {
   "id": "uuid",
-  "storeName": "MCM Hyundai Seoul",
+  "storeName": "THE HYUNDAI SEOUL",
   "purchasedAt": "2026-08-19T05:30:00Z",
   "totalAmount": 850000,
   "currency": "KRW",
@@ -425,8 +426,43 @@ Response `201`:
 }
 ```
 
-분석 성공 시 Receipt와 ReceiptItem을 즉시 저장한다. 상품명은 Catalog의 정규화된 정확한
-이름과 유일하게 일치할 때만 `productId`를 연결한다.
+이 endpoint는 영수증 문서 보관이 아니라 구매 상품 등록(Purchase Capture)을 수행한다.
+분석 성공 시 구매 이벤트와 구매 상품을 즉시 저장하며, 원본 이미지는 저장하지 않는다.
+상품명은 Catalog의 정규화된 정확한 이름과 유일하게 일치할 때만 `productId`를 연결한다.
+일치하지 않는 상품도 OCR 원문 이름과 함께 저장한다. 응답 형식은 기존 Android 호환성을
+위해 유지한다.
+
+### `GET /api/v1/me/purchases`
+
+영수증 문서가 아닌 구매 이벤트 단위로 구매 상품을 조회한다.
+
+Response `200`:
+
+```json
+[
+  {
+    "id": "uuid",
+    "storeName": "THE HYUNDAI SEOUL",
+    "purchasedAt": "2026-08-19T05:30:00Z",
+    "totalAmount": 1093450,
+    "currency": "KRW",
+    "items": [
+      {
+        "purchaseItemId": "uuid",
+        "product": null,
+        "fallbackProductName": "준지_남성",
+        "quantity": 1,
+        "price": 621000
+      }
+    ],
+    "createdAt": "2026-08-19T05:30:01Z"
+  }
+]
+```
+
+Catalog 매칭에 성공하면 `product`에 기존 Product DTO를 반환하고
+`fallbackProductName`은 `null`이다. 매칭에 실패하면 `product`는 `null`이고 OCR에서 읽은
+상품명을 `fallbackProductName`에 그대로 반환한다.
 
 ### `POST /api/v1/me/flights/analyze`
 
@@ -439,17 +475,45 @@ Response `201`:
   "id": "uuid",
   "departureAirport": "ICN",
   "arrivalAirport": "JFK",
+  "terminal": null,
   "flightNumber": "KE081",
   "departureAt": "2026-08-21T01:00:00Z",
+  "arrivalAt": null,
+  "airportArrivalAt": null,
   "createdAt": "2026-08-19T05:31:00Z"
 }
 ```
 
+OCR은 `departureAirport`, `arrivalAirport`, `terminal`, `flightNumber`, `departureAt`,
+`arrivalAt`만 추출한다. 이미지에서 확인할 수 없는 값은 `null`이다. `airportArrivalAt`은
+사용자 계획 값이므로 분석 직후에는 항상 `null`이다.
+
+### `PATCH /api/v1/me/flights/{flightId}`
+
+OCR 누락 값과 사용자가 직접 계획하는 공항 도착 예정시간을 부분 수정한다. 모든 필드는
+선택 사항이며 명시적으로 `null`을 보내 기존 값을 지울 수 있다.
+
+Request 예시:
+
+```json
+{
+  "terminal": "T2",
+  "departureAt": "2026-08-21T10:00:00+09:00",
+  "arrivalAt": "2026-08-21T13:30:00+08:00",
+  "airportArrivalAt": "2026-08-21T07:00:00+09:00"
+}
+```
+
+Response `200`: 수정된 Flight DTO. 존재하지 않거나 Demo User 소유가 아니면
+`404 FLIGHT_NOT_FOUND`를 반환한다.
+
 ### `GET /api/v1/me/recommendations`
 
-OpenAI에는 DB의 `store_products` 관계에서 만든 후보만 전달한다. 이미 구매한 exact product는
-후보에서 제외한다. OpenAI 결과의 Store/Product ID와 소속 관계를 다시 검증하고 유효하지
-않은 항목은 응답에서 제거한다.
+OpenAI에는 Wishlist, SessionProduct 관심 이력, 구매 상품, 최신 Flight와 DB의
+`store_products` 관계에서 만든 후보만 전달한다. Catalog에 매칭된 구매 상품은 exact product
+후보에서 제외한다. 매칭되지 않은 구매 상품은 OCR 상품명과 매장명만 취향 문맥으로 전달한다.
+OpenAI 결과의 Store/Product ID와 소속 관계를 다시 검증하고 유효하지 않은 항목은 응답에서
+제거한다.
 
 Response `200`:
 
@@ -490,7 +554,18 @@ Response `200`:
 {
   "user": {"id": 1, "name": "Demo User"},
   "wishlist": [],
-  "receipts": [],
+  "purchasedProducts": [
+    {
+      "purchaseItemId": "uuid",
+      "product": null,
+      "fallbackProductName": "준지_남성",
+      "quantity": 1,
+      "price": 621000,
+      "currency": "KRW",
+      "storeName": "THE HYUNDAI SEOUL",
+      "purchasedAt": "2026-08-19T05:30:00Z"
+    }
+  ],
   "flight": null
 }
 ```
