@@ -163,3 +163,70 @@ airport_code
 ```
 
 실제 데이터 소스가 확보되면 `AirportCatalogProvider` 구현만 교체한다.
+
+## 9. B5 Demo User Personalization
+
+인증은 추가하지 않고 모든 `/me` API와 새 Shopping Session은 고정 Demo User `id=1`을
+사용한다. 기존 Shopping Session은 migration에서 Demo User로 backfill한다.
+
+```text
+users
+- id INTEGER / PK
+- name VARCHAR
+- created_at TIMESTAMPTZ
+
+wishlist_items
+- id UUID / PK
+- user_id INTEGER / FK
+- product_id UUID / FK
+- created_at TIMESTAMPTZ
+
+UNIQUE(user_id, product_id)
+```
+
+## 10. Receipt / Flight
+
+```text
+receipts
+- id UUID / PK
+- user_id INTEGER / FK
+- store_name VARCHAR
+- purchased_at TIMESTAMPTZ NULL
+- total_amount BIGINT NULL
+- currency VARCHAR(3) NULL
+- image_path TEXT NULL
+- created_at TIMESTAMPTZ
+
+receipt_items
+- id UUID / PK
+- receipt_id UUID / FK
+- product_name VARCHAR
+- product_id UUID / FK NULL
+- quantity INTEGER NULL
+- price BIGINT NULL
+
+flights
+- id UUID / PK
+- user_id INTEGER / FK
+- departure_airport VARCHAR(3)
+- arrival_airport VARCHAR(3)
+- flight_number VARCHAR NULL
+- departure_at TIMESTAMPTZ NULL
+- created_at TIMESTAMPTZ
+```
+
+Receipt 상품 매핑은 정규화된 상품명이 Catalog의 한 상품과 정확하고 유일하게 일치할 때만
+설정한다. OCR 이미지는 저장하지 않으므로 `image_path`는 `NULL`이다. 추천은 `created_at`이
+가장 최신인 Flight를 사용한다.
+
+## 11. Store Product Allowlist
+
+```text
+store_products
+- store_id UUID / FK / PK
+- product_id UUID / FK / PK
+```
+
+추천 후보와 OpenAI 결과의 Store/Product 소속 검증은 이 관계를 기준으로 한다. B5 migration은
+기존 demo Catalog가 바로 동작하도록 현재 Store와 Product 조합을 채우며, product seed도 같은
+관계를 idempotent하게 보완한다. 기존 Store/Product 공개 식별자는 변경하지 않는다.

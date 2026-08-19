@@ -363,3 +363,137 @@ Response:
 - `INVALID_PRODUCT_SELECTION`
 - `TRAVEL_PLAN_REQUIRED`
 - `AIRPORT_CATALOG_UNAVAILABLE`
+- `DOCUMENT_EXTRACTION_PROVIDER_ERROR`
+- `RECOMMENDATION_PROVIDER_ERROR`
+
+---
+
+## 12. Demo User Personalization
+
+모든 `/api/v1/me` API는 인증 없이 고정된 Demo User(`id=1`)를 사용한다.
+
+### `GET /api/v1/me/wishlist`
+
+Response `200`:
+
+```json
+{
+  "items": [
+    {
+      "productId": "demo_perfume_001",
+      "sku": "DEMO-DIPTYQUE-PAPIER-100",
+      "brand": "Diptyque",
+      "name": "로 파피에 오 드 뚜왈렛 100ml",
+      "category": "perfume",
+      "imageUrl": "https://example.com/product.jpg"
+    }
+  ]
+}
+```
+
+### `POST /api/v1/me/wishlist/{productId}`
+
+존재하지 않는 상품은 `404 PRODUCT_NOT_FOUND`를 반환한다. 이미 저장된 상품은 새 row를
+만들지 않으며 동일한 Product DTO를 `200`으로 반환한다.
+
+### `DELETE /api/v1/me/wishlist/{productId}`
+
+존재 여부와 관계없이 `204`를 반환한다.
+
+### `POST /api/v1/me/receipts/analyze`
+
+Content-Type: `multipart/form-data`, field: `image` (JPEG/PNG)
+
+Response `201`:
+
+```json
+{
+  "id": "uuid",
+  "storeName": "MCM Hyundai Seoul",
+  "purchasedAt": "2026-08-19T05:30:00Z",
+  "totalAmount": 850000,
+  "currency": "KRW",
+  "items": [
+    {
+      "name": "Stark Backpack",
+      "productId": null,
+      "quantity": 1,
+      "price": 850000
+    }
+  ],
+  "createdAt": "2026-08-19T05:30:01Z"
+}
+```
+
+분석 성공 시 Receipt와 ReceiptItem을 즉시 저장한다. 상품명은 Catalog의 정규화된 정확한
+이름과 유일하게 일치할 때만 `productId`를 연결한다.
+
+### `POST /api/v1/me/flights/analyze`
+
+Content-Type: `multipart/form-data`, field: `image` (JPEG/PNG)
+
+Response `201`:
+
+```json
+{
+  "id": "uuid",
+  "departureAirport": "ICN",
+  "arrivalAirport": "JFK",
+  "flightNumber": "KE081",
+  "departureAt": "2026-08-21T01:00:00Z",
+  "createdAt": "2026-08-19T05:31:00Z"
+}
+```
+
+### `GET /api/v1/me/recommendations`
+
+OpenAI에는 DB의 `store_products` 관계에서 만든 후보만 전달한다. 이미 구매한 exact product는
+후보에서 제외한다. OpenAI 결과의 Store/Product ID와 소속 관계를 다시 검증하고 유효하지
+않은 항목은 응답에서 제거한다.
+
+Response `200`:
+
+```json
+{
+  "stores": [
+    {
+      "storeId": "10000000-0000-0000-0000-000000000003",
+      "name": "MCM Airport Store",
+      "reason": "출국 전에 방문하기 편리한 매장입니다.",
+      "products": [
+        {
+          "product": {
+            "productId": "demo_perfume_001",
+            "sku": "DEMO-DIPTYQUE-PAPIER-100",
+            "brand": "Diptyque",
+            "name": "로 파피에 오 드 뚜왈렛 100ml",
+            "category": "perfume",
+            "imageUrl": "https://example.com/product.jpg"
+          },
+          "reason": "Wishlist와 매장 관찰 이력에 모두 포함된 상품입니다."
+        }
+      ]
+    }
+  ]
+}
+```
+
+개인화 데이터나 추천 후보가 없으면 `200 {"stores": []}`를 반환한다.
+
+### `GET /api/v1/me`
+
+Recommendation provider를 호출하지 않고 저장 데이터만 집계한다.
+
+Response `200`:
+
+```json
+{
+  "user": {"id": 1, "name": "Demo User"},
+  "wishlist": [],
+  "receipts": [],
+  "flight": null
+}
+```
+
+Document/Recommendation OpenAI timeout, API failure, structured response validation 실패는 각각
+`503 DOCUMENT_EXTRACTION_PROVIDER_ERROR`, `503 RECOMMENDATION_PROVIDER_ERROR`로 변환한다.
