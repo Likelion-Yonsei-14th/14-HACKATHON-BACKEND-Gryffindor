@@ -14,6 +14,7 @@ from app.db.base import Base
 from app.db.session import get_db_session
 from app.main import create_app
 from app.models.currency_rate import CurrencyRate
+from app.scripts.seed_demo_user import seed_demo_user
 from app.scripts.seed_products import seed_products
 from app.scripts.seed_stores import seed_stores
 
@@ -29,6 +30,7 @@ def db_session() -> Generator[Session, None, None]:
     testing_session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
     with testing_session() as session:
+        seed_demo_user(session)
         seed_stores(session)
         seed_products(session)
         session.add_all(
