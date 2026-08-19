@@ -11,6 +11,7 @@ from app.api.health import router as health_router
 from app.api.me import router as me_router
 from app.api.sessions import router as sessions_router
 from app.api.stores import router as stores_router
+from app.api.trips import router as trips_router
 from app.core.config import Settings, get_settings
 from app.db.session import SessionLocal
 from app.errors import AppError
@@ -74,6 +75,7 @@ def create_app(*, enable_exchange_rate_startup: bool = True) -> FastAPI:
     application.include_router(stores_router)
     application.include_router(sessions_router)
     application.include_router(me_router)
+    application.include_router(trips_router)
     application.state.exchange_rate_startup_enabled = enable_exchange_rate_startup
     return application
 

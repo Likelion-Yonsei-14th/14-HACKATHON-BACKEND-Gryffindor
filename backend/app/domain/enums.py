@@ -21,3 +21,8 @@ class TriggerType(StrEnum):
 class PurchaseState(StrEnum):
     UNSET = "UNSET"
     PURCHASED = "PURCHASED"
+
+
+class ReservationStatus(StrEnum):
+    RESERVED = "RESERVED"
+    CANCELLED = "CANCELLED"

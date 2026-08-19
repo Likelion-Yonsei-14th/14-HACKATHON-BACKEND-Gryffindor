@@ -24,6 +24,11 @@ def list_stores(db: DbSession) -> StoreListResponse:
                 city=store.city,
                 type=store.type,
                 airport_code=store.airport_code,
+                address=store.address,
+                latitude=store.latitude,
+                longitude=store.longitude,
+                terminal=store.terminal,
+                opening_hours=store.opening_hours,
             )
             for store in stores
         ]

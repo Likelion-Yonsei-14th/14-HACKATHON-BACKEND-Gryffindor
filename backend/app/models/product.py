@@ -24,6 +24,7 @@ from app.models.common import utc_now
 if TYPE_CHECKING:
     from app.models.personalization import ReceiptItem, StoreProduct, WishlistItem
     from app.models.shopping import SessionProduct
+    from app.models.trip import VisitReservationProduct
 
 
 json_type = JSON().with_variant(JSONB(), "postgresql")
@@ -83,4 +84,7 @@ class Product(Base):
     store_products: Mapped[list[StoreProduct]] = relationship(
         back_populates="product",
         cascade="all, delete-orphan",
+    )
+    visit_reservation_products: Mapped[list[VisitReservationProduct]] = relationship(
+        back_populates="product"
     )

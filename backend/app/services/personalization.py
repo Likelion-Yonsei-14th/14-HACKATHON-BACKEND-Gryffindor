@@ -15,6 +15,7 @@ from app.providers.documents import (
 )
 from app.repositories.personalization import PersonalizationRepository
 from app.repositories.products import ProductRepository
+from app.repositories.trips import TripRepository
 
 
 class PersonalizationService:
@@ -22,6 +23,7 @@ class PersonalizationService:
         self._db = db
         self._personalization = PersonalizationRepository(db)
         self._products = ProductRepository(db)
+        self._trips = TripRepository(db)
 
     def user(self) -> User:
         user = self._personalization.get_user(DEMO_USER_ID)
@@ -98,8 +100,11 @@ class PersonalizationService:
         self,
         image_bytes: bytes,
         provider: DocumentExtractionProvider,
+        trip_id: UUID | None = None,
     ) -> Flight:
         self.user()
+        if trip_id is not None and self._trips.get(DEMO_USER_ID, trip_id) is None:
+            raise AppError(404, "TRIP_NOT_FOUND", "Trip was not found.")
         try:
             extraction = await provider.extract_flight(image_bytes)
         except DocumentExtractionProviderError as exc:
@@ -108,6 +113,7 @@ class PersonalizationService:
         flight = self._personalization.add_flight(
             Flight(
                 user_id=DEMO_USER_ID,
+                trip_id=trip_id,
                 departure_airport=extraction.departure_airport,
                 arrival_airport=extraction.arrival_airport,
                 terminal=extraction.terminal,

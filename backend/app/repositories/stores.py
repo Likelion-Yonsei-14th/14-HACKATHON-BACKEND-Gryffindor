@@ -1,8 +1,9 @@
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
+from app.models.personalization import StoreProduct
 from app.models.store import Store
 
 
@@ -12,6 +13,14 @@ class StoreRepository:
 
     def get(self, store_id: UUID) -> Store | None:
         return self._db.get(Store, store_id)
+
+    def get_with_products(self, store_id: UUID) -> Store | None:
+        statement = (
+            select(Store)
+            .options(joinedload(Store.store_products).joinedload(StoreProduct.product))
+            .where(Store.id == store_id)
+        )
+        return self._db.scalars(statement).unique().one_or_none()
 
     def list_all(self) -> list[Store]:
         statement = select(Store).order_by(Store.id)

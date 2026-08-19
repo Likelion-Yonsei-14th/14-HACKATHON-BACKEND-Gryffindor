@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from app.models.product import Product
     from app.models.shopping import ShoppingSession
     from app.models.store import Store
+    from app.models.trip import Trip
 
 
 class User(Base):
@@ -48,6 +49,10 @@ class User(Base):
         cascade="all, delete-orphan",
     )
     flights: Mapped[list[Flight]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    trips: Mapped[list[Trip]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
@@ -149,6 +154,10 @@ class Flight(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
+    trip_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("trips.id", ondelete="SET NULL"),
+        index=True,
+    )
     departure_airport: Mapped[str | None] = mapped_column(String(3))
     arrival_airport: Mapped[str | None] = mapped_column(String(3))
     terminal: Mapped[str | None] = mapped_column(String(100))
@@ -164,6 +173,7 @@ class Flight(Base):
     )
 
     user: Mapped[User] = relationship(back_populates="flights")
+    trip: Mapped[Trip | None] = relationship(back_populates="flights")
 
 
 class StoreProduct(Base):

@@ -40,14 +40,41 @@ class FlightContext(RecommendationModel):
     airport_arrival_at: datetime | None
 
 
+class TripContext(RecommendationModel):
+    trip_id: UUID
+    title: str
+    destination_city: str | None
+    destination_country: str | None
+    starts_at: datetime | None
+    ends_at: datetime | None
+
+
+class HotelContext(RecommendationModel):
+    name: str
+    address: str | None
+    latitude: float | None
+    longitude: float | None
+    check_in_at: datetime | None
+    check_out_at: datetime | None
+
+
 class CandidateStoreContext(RecommendationModel):
     store_id: UUID
     name: str
     country: str
-    city: str
+    city: str | None
     type: str
     airport_code: str | None
     product_ids: list[str]
+    address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    terminal: str | None = None
+    opening_hours: str | None = None
+    distance_from_hotel_km: float | None = None
+    airport_match: bool = False
+    terminal_match: bool = False
+    has_wishlist_items: bool = False
 
 
 class CandidateProductContext(RecommendationModel):
@@ -57,6 +84,7 @@ class CandidateProductContext(RecommendationModel):
     name: str
     category: str
     store_ids: list[UUID]
+    description: str | None = None
 
 
 class RecommendationContext(RecommendationModel):
@@ -67,6 +95,8 @@ class RecommendationContext(RecommendationModel):
     latest_flight: FlightContext | None
     candidate_stores: list[CandidateStoreContext]
     candidate_products: list[CandidateProductContext]
+    trip: TripContext | None = None
+    hotel: HotelContext | None = None
 
 
 class RecommendationProductDecision(RecommendationModel):

@@ -101,5 +101,128 @@
       "recognitionTest": true,
       "source": "oliveyoung"
     }
+  },
+  {
+    "productId": "demo_bag_001",
+    "sku": "DEMO-STARK-BACKPACK-001",
+    "brand": "Demo Atelier",
+    "name": "Stark Backpack",
+    "category": "bag",
+    "imageUrl": "https://example.com/products/demo_bag_001.jpg",
+    "priceKrw": 890000,
+    "estimatedRefundKrw": 62000,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true,
+      "b6Demo": true,
+      "description": "도시 여행에 어울리는 구조적인 블랙 백팩"
+    },
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000004",
+      "10000000-0000-0000-0000-000000000006"
+    ]
+  },
+  {
+    "productId": "demo_bag_002",
+    "sku": "DEMO-SEOUL-MINI-TOTE-002",
+    "brand": "Demo Maison",
+    "name": "Seoul Mini Tote",
+    "category": "bag",
+    "imageUrl": "https://example.com/products/demo_bag_002.jpg",
+    "priceKrw": 1250000,
+    "estimatedRefundKrw": 87000,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true,
+      "b6Demo": true,
+      "description": "가볍게 들 수 있는 미니 사이즈 토트백"
+    },
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000005",
+      "10000000-0000-0000-0000-000000000006",
+      "10000000-0000-0000-0000-000000000008"
+    ]
+  },
+  {
+    "productId": "demo_bag_003",
+    "sku": "DEMO-CLASSIC-CROSSBODY-003",
+    "brand": "Demo Heritage",
+    "name": "Classic Crossbody",
+    "category": "bag",
+    "imageUrl": "https://example.com/products/demo_bag_003.jpg",
+    "priceKrw": 760000,
+    "estimatedRefundKrw": 53000,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true,
+      "b6Demo": true,
+      "description": "여행 중 손이 자유로운 클래식 크로스바디백"
+    },
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000004",
+      "10000000-0000-0000-0000-000000000005",
+      "10000000-0000-0000-0000-000000000009"
+    ]
+  },
+  {
+    "productId": "demo_perfume_002",
+    "sku": "DEMO-MIDNIGHT-SEOUL-50",
+    "brand": "Demo Parfums",
+    "name": "Midnight Seoul Eau de Parfum 50ml",
+    "category": "perfume",
+    "imageUrl": "https://example.com/products/demo_perfume_002.jpg",
+    "priceKrw": 210000,
+    "estimatedRefundKrw": 15000,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true,
+      "b6Demo": true,
+      "description": "우디 앰버 계열의 데모 오 드 퍼퓸"
+    },
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000007",
+      "10000000-0000-0000-0000-000000000009",
+      "10000000-0000-0000-0000-000000000010"
+    ]
+  },
+  {
+    "productId": "demo_perfume_003",
+    "sku": "DEMO-GARDEN-MUSK-75",
+    "brand": "Demo Parfums",
+    "name": "Garden Musk Eau de Parfum 75ml",
+    "category": "perfume",
+    "imageUrl": "https://example.com/products/demo_perfume_003.jpg",
+    "priceKrw": 245000,
+    "estimatedRefundKrw": 17000,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true,
+      "b6Demo": true,
+      "description": "플로럴 머스크 계열의 데모 오 드 퍼퓸"
+    },
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000008",
+      "10000000-0000-0000-0000-000000000009"
+    ]
+  },
+  {
+    "productId": "demo_perfume_004",
+    "sku": "DEMO-CEDAR-VOYAGE-100",
+    "brand": "Demo Scent Lab",
+    "name": "Cedar Voyage Eau de Toilette 100ml",
+    "category": "perfume",
+    "imageUrl": "https://example.com/products/demo_perfume_004.jpg",
+    "priceKrw": 185000,
+    "estimatedRefundKrw": 12000,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true,
+      "b6Demo": true,
+      "description": "시더우드와 시트러스가 어우러진 여행용 향수"
+    },
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000007",
+      "10000000-0000-0000-0000-000000000010"
+    ]
   }
 ]

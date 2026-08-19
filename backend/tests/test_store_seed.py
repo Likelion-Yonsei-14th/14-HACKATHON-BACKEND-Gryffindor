@@ -12,13 +12,16 @@ def test_store_seed_adds_demo_stores_and_is_idempotent(db_session: Session) -> N
     second_count = db_session.scalar(select(func.count()).select_from(Store))
     stores = db_session.scalars(select(Store).order_by(Store.id)).all()
 
-    assert first_count == 3
-    assert seeded_count == 3
-    assert second_count == 3
-    assert [store.name for store in stores] == [
+    assert first_count == 10
+    assert seeded_count == 10
+    assert second_count == 10
+    assert [store.name for store in stores[:3]] == [
         "MCM Seoul",
         "MCM New York",
         "MCM Airport Store",
     ]
     assert stores[2].type == "AIRPORT"
     assert stores[2].airport_code == "ICN"
+    assert {store.type for store in stores[3:]} == {"DEPARTMENT_STORE", "DUTY_FREE"}
+    assert stores[-1].terminal == "T2"
+    assert stores[-1].latitude is not None

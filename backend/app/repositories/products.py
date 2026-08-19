@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -15,3 +17,15 @@ class ProductRepository:
     def get_by_product_id(self, product_id: str) -> Product | None:
         statement = select(Product).where(Product.product_id == product_id)
         return self._db.scalar(statement)
+
+    def list_by_product_ids(self, product_ids: list[str]) -> list[Product]:
+        if not product_ids:
+            return []
+        statement = select(Product).where(Product.product_id.in_(product_ids))
+        return list(self._db.scalars(statement).all())
+
+    def list_by_ids(self, product_ids: set[UUID]) -> list[Product]:
+        if not product_ids:
+            return []
+        statement = select(Product).where(Product.id.in_(product_ids))
+        return list(self._db.scalars(statement).all())

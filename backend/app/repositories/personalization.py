@@ -82,6 +82,15 @@ class PersonalizationRepository:
         )
         return self._db.scalar(statement)
 
+    def latest_trip_flight(self, user_id: int, trip_id: UUID) -> Flight | None:
+        statement = (
+            select(Flight)
+            .where(Flight.user_id == user_id, Flight.trip_id == trip_id)
+            .order_by(Flight.created_at.desc(), Flight.id.desc())
+            .limit(1)
+        )
+        return self._db.scalar(statement)
+
     def list_recent_session_products(
         self,
         user_id: int,
@@ -112,3 +121,19 @@ class PersonalizationRepository:
             .order_by(Store.id)
         )
         return list(self._db.scalars(statement).unique().all())
+
+    def list_store_wishlist_products(self, user_id: int, store_id: UUID) -> list[WishlistItem]:
+        statement = (
+            select(WishlistItem)
+            .join(
+                StoreProduct,
+                StoreProduct.product_id == WishlistItem.product_id,
+            )
+            .options(joinedload(WishlistItem.product))
+            .where(
+                WishlistItem.user_id == user_id,
+                StoreProduct.store_id == store_id,
+            )
+            .order_by(WishlistItem.created_at, WishlistItem.id)
+        )
+        return list(self._db.scalars(statement).all())

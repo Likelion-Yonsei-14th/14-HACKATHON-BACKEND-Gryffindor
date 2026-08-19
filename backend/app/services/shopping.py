@@ -99,7 +99,11 @@ class RecognitionService:
         dwell_ms: int,
     ) -> RecognitionResult:
         shopping_session = self._get_active_session(session_id)
-        products = self._products.list_all()[: self._candidate_limit]
+        products = [
+            product
+            for product in self._products.list_all()
+            if product.metadata_json.get("recognitionTest") is True
+        ][: self._candidate_limit]
         products_by_product_id = {product.product_id: product for product in products}
         candidates = [
             RecognitionCandidate(

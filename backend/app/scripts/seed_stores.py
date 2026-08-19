@@ -18,9 +18,14 @@ class StoreSeed(BaseModel):
     name: str
     brand: str
     country: str
-    city: str
+    city: str | None
     type: str
     airport_code: str | None = Field(alias="airportCode")
+    address: str | None = None
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    terminal: str | None = None
+    opening_hours: str | None = Field(default=None, alias="openingHours")
 
 
 def seed_stores(db: Session, seed_path: Path = DEFAULT_SEED_PATH) -> int:
@@ -39,6 +44,11 @@ def seed_stores(db: Session, seed_path: Path = DEFAULT_SEED_PATH) -> int:
         store.city = seed.city
         store.type = seed.type
         store.airport_code = seed.airport_code
+        store.address = seed.address
+        store.latitude = seed.latitude
+        store.longitude = seed.longitude
+        store.terminal = seed.terminal
+        store.opening_hours = seed.opening_hours
 
     db.commit()
     return len(stores)

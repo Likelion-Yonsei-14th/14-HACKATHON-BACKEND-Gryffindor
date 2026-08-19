@@ -3,10 +3,16 @@ from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.alias_generators import to_camel
 
-from app.domain.enums import PurchaseState, RecognitionStatus, SessionStatus, TriggerType
+from app.domain.enums import (
+    PurchaseState,
+    RecognitionStatus,
+    ReservationStatus,
+    SessionStatus,
+    TriggerType,
+)
 
 
 class ApiModel(BaseModel):
@@ -31,9 +37,14 @@ class StoreResponse(ApiModel):
     name: str
     brand: str
     country: str
-    city: str
+    city: str | None
     type: str
     airport_code: str | None
+    address: str | None
+    latitude: float | None
+    longitude: float | None
+    terminal: str | None
+    opening_hours: str | None
 
 
 class StoreListResponse(ApiModel):
@@ -133,6 +144,7 @@ class ReceiptResponse(ApiModel):
 
 class FlightResponse(ApiModel):
     id: UUID
+    trip_id: UUID | None
     departure_airport: str | None
     arrival_airport: str | None
     terminal: str | None
@@ -205,6 +217,167 @@ class RecommendationResponse(ApiModel):
     stores: list[RecommendationStoreResponse]
 
 
+class TripCreateRequest(ApiModel):
+    title: str = Field(min_length=1, max_length=120)
+    destination_city: str | None = Field(default=None, max_length=120)
+    destination_country: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+
+    @field_validator("starts_at", "ends_at")
+    @classmethod
+    def require_aware_trip_time(cls, value: datetime | None) -> datetime | None:
+        return _require_aware_datetime(value, "trip timestamps")
+
+    @model_validator(mode="after")
+    def validate_time_order(self) -> "TripCreateRequest":
+        _validate_time_order(self.starts_at, self.ends_at)
+        return self
+
+
+class TripPatchRequest(ApiModel):
+    title: str | None = Field(default=None, min_length=1, max_length=120)
+    destination_city: str | None = Field(default=None, max_length=120)
+    destination_country: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+
+    @field_validator("starts_at", "ends_at")
+    @classmethod
+    def require_aware_trip_time(cls, value: datetime | None) -> datetime | None:
+        return _require_aware_datetime(value, "trip timestamps")
+
+    @model_validator(mode="after")
+    def validate_patch(self) -> "TripPatchRequest":
+        if "title" in self.model_fields_set and self.title is None:
+            raise ValueError("title cannot be null")
+        if "starts_at" in self.model_fields_set and "ends_at" in self.model_fields_set:
+            _validate_time_order(self.starts_at, self.ends_at)
+        return self
+
+
+class TripResponse(ApiModel):
+    id: UUID
+    title: str
+    destination_city: str | None
+    destination_country: str | None
+    starts_at: datetime | None
+    ends_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class TripSummaryResponse(ApiModel):
+    id: UUID
+    title: str
+    starts_at: datetime | None
+    ends_at: datetime | None
+
+
+class TripListResponse(ApiModel):
+    trips: list[TripResponse]
+
+
+class HotelStayRequest(ApiModel):
+    name: str = Field(min_length=1, max_length=255)
+    address: str | None = Field(default=None, max_length=1000)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    check_in_at: datetime | None = None
+    check_out_at: datetime | None = None
+
+    @field_validator("check_in_at", "check_out_at")
+    @classmethod
+    def require_aware_hotel_time(cls, value: datetime | None) -> datetime | None:
+        return _require_aware_datetime(value, "hotel timestamps")
+
+    @model_validator(mode="after")
+    def validate_time_order(self) -> "HotelStayRequest":
+        _validate_time_order(self.check_in_at, self.check_out_at)
+        return self
+
+
+class HotelStayResponse(ApiModel):
+    id: UUID
+    trip_id: UUID
+    name: str
+    address: str | None
+    latitude: float | None
+    longitude: float | None
+    check_in_at: datetime | None
+    check_out_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class VisitReservationCreateRequest(ApiModel):
+    store_id: UUID
+    scheduled_at: datetime
+    product_ids: list[str] = Field(default_factory=list, max_length=20)
+
+    @field_validator("scheduled_at")
+    @classmethod
+    def require_aware_scheduled_time(cls, value: datetime) -> datetime:
+        aware = _require_aware_datetime(value, "scheduledAt")
+        if aware is None:
+            raise ValueError("scheduledAt is required")
+        return aware
+
+
+class ReservationStoreResponse(ApiModel):
+    store_id: UUID
+    name: str
+
+
+class VisitReservationResponse(ApiModel):
+    id: UUID
+    trip_id: UUID
+    store: ReservationStoreResponse
+    scheduled_at: datetime
+    products: list[ProductResponse]
+    status: ReservationStatus
+    created_at: datetime
+
+
+class TripDetailResponse(ApiModel):
+    trip: TripResponse
+    flights: list[FlightResponse]
+    hotel: HotelStayResponse | None
+    visit_reservations: list[VisitReservationResponse]
+
+
+class StoreWishlistProductResponse(ApiModel):
+    product_id: str
+    name: str
+
+
+class FeedTripResponse(ApiModel):
+    id: UUID
+    title: str
+
+
+class FeedStoreResponse(ApiModel):
+    store_id: UUID
+    name: str
+    type: str
+    distance_from_hotel_km: float | None
+    airport_code: str | None
+    terminal: str | None
+    has_wishlist_items: bool
+    reason: str
+
+
+class FeedRecommendationResponse(ApiModel):
+    product: ProductResponse
+    reason: str
+    stores: list[FeedStoreResponse]
+
+
+class TripFeedResponse(ApiModel):
+    trip: FeedTripResponse
+    recommendations: list[FeedRecommendationResponse]
+
+
 class UserResponse(ApiModel):
     id: int
     name: str
@@ -215,3 +388,15 @@ class MyPageResponse(ApiModel):
     wishlist: list[ProductResponse]
     purchased_products: list[PurchasedProductResponse]
     flight: FlightResponse | None
+    trips: list[TripSummaryResponse]
+
+
+def _require_aware_datetime(value: datetime | None, field_name: str) -> datetime | None:
+    if value is not None and (value.tzinfo is None or value.utcoffset() is None):
+        raise ValueError(f"{field_name} must include a timezone offset")
+    return value
+
+
+def _validate_time_order(starts_at: datetime | None, ends_at: datetime | None) -> None:
+    if starts_at is not None and ends_at is not None and ends_at < starts_at:
+        raise ValueError("end time must not be earlier than start time")

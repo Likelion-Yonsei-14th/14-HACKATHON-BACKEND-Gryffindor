@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Path, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Path, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
@@ -29,12 +29,14 @@ from app.schemas.api import (
     RecommendationProductResponse,
     RecommendationResponse,
     RecommendationStoreResponse,
+    TripSummaryResponse,
     UserResponse,
     WishlistResponse,
 )
 from app.services.images import read_valid_image
 from app.services.personalization import PersonalizationService
 from app.services.recommendations import RecommendationService
+from app.services.trips import TripService
 
 router = APIRouter(prefix="/api/v1/me", tags=["personalization"])
 logger = logging.getLogger(__name__)
@@ -151,9 +153,10 @@ async def analyze_flight(
     db: DbSession,
     settings: AppSettings,
     provider: DocumentProviderDependency,
+    trip_id: Annotated[UUID | None, Form(alias="tripId")] = None,
 ) -> FlightResponse:
     image_bytes = await read_valid_image(image, settings.recognition_max_image_bytes)
-    flight = await PersonalizationService(db).analyze_flight(image_bytes, provider)
+    flight = await PersonalizationService(db).analyze_flight(image_bytes, provider, trip_id)
     logger.info(
         "flight_extraction_completed flight_id=%s provider=%s image_bytes=%d",
         flight.id,
@@ -239,6 +242,15 @@ def my_page(db: DbSession) -> MyPageResponse:
             for item in purchase.items
         ],
         flight=_optional_flight_response(service.latest_flight()),
+        trips=[
+            TripSummaryResponse(
+                id=trip.id,
+                title=trip.title,
+                starts_at=trip.starts_at,
+                ends_at=trip.ends_at,
+            )
+            for trip in TripService(db).list_trips()
+        ],
     )
 
 
@@ -313,6 +325,7 @@ def _purchased_product_response(
 def _flight_response(flight: Flight) -> FlightResponse:
     return FlightResponse(
         id=flight.id,
+        trip_id=flight.trip_id,
         departure_airport=flight.departure_airport,
         arrival_airport=flight.arrival_airport,
         terminal=flight.terminal,
