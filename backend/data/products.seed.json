@@ -1,72 +1,128 @@
 [
   {
-    "productId": "mcm_stark_backpack_001",
-    "sku": "MMKGSVE034B001",
-    "brand": "MCM",
-    "name": "Stark 사이드 스터드 비세토스 백팩 S",
-    "category": "bag",
-    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MMKGSVE034B001_01/stark-cinnamon-s?$w1000$&fmt=auto&qlt=default",
-    "priceKrw": 1650000,
+    "productId": "diptyque_leau_papier_100_001",
+    "sku": "DIPTYQUE-PAPIER-100",
+    "brand": "Diptyque",
+    "name": "L'Eau Papier Eau de Toilette 100ml",
+    "category": "perfume",
+    "imageUrl": "https://www.diptyqueparis.com/media/catalog/product/d/i/diptyque-l-eau-papier-eau-de-toilette-100ml-papier100-1.jpg?bg-color=255%2C255%2C255&fit=bounds&format=webp&quality=90&width=1000",
+    "priceKrw": 282000,
     "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
-      "productionCatalog": true,
-      "source": "MCM Korea official",
-      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EB%82%A8%EC%84%B1/%EA%B0%80%EB%B0%A9/%EB%B0%B1%ED%8C%A9/stark-%EC%82%AC%EC%9D%B4%EB%93%9C-%EC%8A%A4%ED%84%B0%EB%93%9C-%EB%B9%84%EC%84%B8%ED%86%A0%EC%8A%A4-%EB%B0%B1%ED%8C%A9/MMKGSVE034B001.html",
-      "priceBasis": "MCM Korea official retail list price; duty-free selling price not verified",
-      "inventoryNote": "Demo mapping to both selected MCM duty-free stores; live stock not verified",
-      "imageFileSuggestion": "mcm-stark-backpack-MMKGSVE034B001.jpg"
+      "demo": true,
+      "recognitionTest": true,
+      "physicalDemo": true,
+      "recommendationSource": true,
+      "recommendationGroup": "fragrance",
+      "variant": "100ml",
+      "source": "Diptyque official",
+      "sourcePage": "https://www.diptyqueparis.com/en_eu/p/fragrances/all-fragrances/eau-papier-eau-de-toilette-100ml.html",
+      "notes": [
+        "white musk",
+        "mimosa",
+        "blonde woods",
+        "rice steam"
+      ]
     },
-    "storeIds": [
-      "10000000-0000-0000-0000-000000000005",
-      "10000000-0000-0000-0000-000000000008"
-    ]
+    "storeIds": []
   },
   {
-    "productId": "mcm_aren_tote_001",
-    "sku": "MMTGSTA04BK001",
-    "brand": "MCM",
-    "name": "Aren 비세토스 N/S 토트 미니",
-    "category": "bag",
-    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MMTGSTA04BK001_01/aren-n-s-black-?$w1000$&fmt=auto&qlt=default",
-    "priceKrw": 1050000,
+    "productId": "dashu_aqua_dive_50_001",
+    "sku": "DASHU-AQUA-DIVE-50",
+    "brand": "DASHU",
+    "name": "Aqua Dive Perfume 50ml",
+    "category": "perfume",
+    "imageUrl": "https://placehold.co/1000x1000/png?text=DASHU+Aqua+Dive+50ml",
+    "priceKrw": 44000,
     "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
-      "productionCatalog": true,
-      "source": "MCM Korea official",
-      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EB%82%A8%EC%84%B1/%EA%B0%80%EB%B0%A9/%ED%86%A0%ED%8A%B8%EB%B0%B1/aren-%EB%B9%84%EC%84%B8%ED%86%A0%EC%8A%A4-n%2Fs-%ED%86%A0%ED%8A%B8/MMTGSTA04BK001.html",
-      "priceBasis": "MCM Korea official retail list price; duty-free selling price not verified",
-      "inventoryNote": "Demo mapping to both selected MCM duty-free stores; live stock not verified",
-      "imageFileSuggestion": "mcm-aren-tote-MMTGSTA04BK001.jpg"
+      "demo": true,
+      "recognitionTest": true,
+      "physicalDemo": true,
+      "recommendationSource": true,
+      "recommendationGroup": "fragrance",
+      "variant": "50ml",
+      "source": "DASHU",
+      "sourcePage": "https://www.hwahae.com/en/products/DASHU-Aqua-Dive-Perfume/1940005",
+      "imageNeedsReplacement": true
     },
-    "storeIds": [
-      "10000000-0000-0000-0000-000000000005",
-      "10000000-0000-0000-0000-000000000008"
-    ]
+    "storeIds": []
   },
   {
-    "productId": "mcm_stark_charm_001",
-    "sku": "MXZGATA19BK001",
-    "brand": "MCM",
-    "name": "모노그램 프린트 레더 2D Stark 비세토스 백팩 참",
-    "category": "accessory",
-    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MXZGATA19BK001_01/-2d-stark-black-?$w1000$&fmt=auto&qlt=default",
-    "priceKrw": 290000,
+    "productId": "anillo_fragrance_of_life_10_001",
+    "sku": "ANILLO-FRAGRANCE-OF-LIFE-10",
+    "brand": "ANILLO",
+    "name": "The Fragrance of Life Eau de Parfum 10ml",
+    "category": "perfume",
+    "imageUrl": "https://placehold.co/1000x1000/png?text=ANILLO+The+Fragrance+of+Life+10ml",
+    "priceKrw": 26000,
     "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
-      "productionCatalog": true,
-      "source": "MCM Korea official",
-      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EB%82%A8%EC%84%B1/%ED%8C%A8%EC%85%98%EC%86%8C%ED%92%88/%EB%AA%A8%EB%91%90%EB%B3%B4%EA%B8%B0/%EB%AA%A8%EB%85%B8%EA%B7%B8%EB%9E%A8-%ED%94%84%EB%A6%B0%ED%8A%B8-%EB%A0%88%EB%8D%94-2d-stark-%EB%B9%84%EC%84%B8%ED%86%A0%EC%8A%A4-%EB%B0%B1%ED%8C%A9-%EC%B0%B8-/MXZGATA19BK001.html",
-      "priceBasis": "MCM Korea official retail list price; duty-free selling price not verified",
-      "inventoryNote": "Official item includes a key-ring clasp",
-      "imageFileSuggestion": "mcm-stark-charm-MXZGATA19BK001.jpg"
+      "demo": true,
+      "recognitionTest": true,
+      "physicalDemo": true,
+      "recommendationSource": true,
+      "recommendationGroup": "fragrance",
+      "variant": "10ml",
+      "source": "User-confirmed physical demo product",
+      "sourcePage": "https://www.anillo.co.kr/category/parfum/73/",
+      "imageNeedsReplacement": true
     },
-    "storeIds": [
-      "10000000-0000-0000-0000-000000000005",
-      "10000000-0000-0000-0000-000000000008"
-    ]
+    "storeIds": []
+  },
+  {
+    "productId": "hatchingroom_wavy_bag_mini_nylon_001",
+    "sku": "HATCHINGROOM-1656",
+    "brand": "HATCHINGROOM",
+    "name": "Wavy Bag Mini High Density Nylon Black",
+    "category": "bag",
+    "imageUrl": "https://placehold.co/1000x1000/png?text=HATCHINGROOM+Wavy+Bag+Mini",
+    "priceKrw": 123000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": false,
+    "metadata": {
+      "demo": true,
+      "recognitionTest": true,
+      "physicalDemo": true,
+      "recommendationSource": true,
+      "recommendationGroup": "bag",
+      "color": "Black",
+      "material": "100% Nylon / 100% Polyester lining / Cow leather parts",
+      "sizeCm": {
+        "width": 25,
+        "height": 20,
+        "depth": 9.5
+      },
+      "source": "HATCHINGROOM official",
+      "sourcePage": "https://hatchingroom.com/product/wavy-bag-mini-high-density-nylon-black/1656/",
+      "imageNeedsReplacement": true
+    },
+    "storeIds": []
+  },
+  {
+    "productId": "zara_leather_tote_001",
+    "sku": "ZARA-16305710",
+    "brand": "ZARA",
+    "name": "가죽 토트백",
+    "category": "bag",
+    "imageUrl": "https://placehold.co/1000x1000/png?text=ZARA+Leather+Tote",
+    "priceKrw": 149900,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": false,
+    "metadata": {
+      "demo": true,
+      "recognitionTest": true,
+      "physicalDemo": true,
+      "recommendationSource": true,
+      "recommendationGroup": "bag",
+      "source": "ZARA Korea",
+      "sourcePage": "https://www.zara.com/kr/ko/%E1%84%80%E1%85%A1%E1%84%8C%E1%85%AE%E1%86%A8-%E1%84%90%E1%85%A9%E1%84%90%E1%85%B3%E1%84%87%E1%85%A2%E1%86%A8-p16305710.html?v1=585341101&v2=2417728",
+      "imageNeedsReplacement": true
+    },
+    "storeIds": []
   },
   {
     "productId": "mcm_eau_de_parfum_50_001",
@@ -80,11 +136,13 @@
     "taxRefundSupported": false,
     "metadata": {
       "productionCatalog": true,
+      "recognitionTest": false,
+      "recommendationCandidate": true,
+      "recommendationGroup": "fragrance",
+      "variant": "50ml",
+      "color": "Cognac",
       "source": "MCM Korea official",
-      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%8C%A8%EC%85%98%EC%86%8C%ED%92%88/%ED%96%A5%EC%88%98/mcm-%EC%98%A4-%EB%93%9C-%ED%8D%BC%ED%93%B8/MPFBSMM02CO001.html",
-      "priceBasis": "MCM Korea official retail list price; duty-free selling price not verified",
-      "inventoryNote": "Demo mapping to both selected MCM duty-free stores; live stock not verified",
-      "imageFileSuggestion": "mcm-edp-50ml-MPFBSMM02CO001.jpg"
+      "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
     },
     "storeIds": [
       "10000000-0000-0000-0000-000000000005",
@@ -92,22 +150,24 @@
     ]
   },
   {
-    "productId": "mcm_diamond_eau_de_parfum_50_001",
-    "sku": "MPFEAMM06BK001",
+    "productId": "mcm_cozy_cat_100_001",
+    "sku": "MPFGAMM02CO001",
     "brand": "MCM",
-    "name": "Diamond 오 드 퍼퓸 50ml",
+    "name": "Cozy Cat 오 드 퍼퓸 100ml",
     "category": "perfume",
-    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MPFEAMM06BK001_02/diamond-black-50ml?$w1000$&fmt=auto&qlt=default",
-    "priceKrw": 121000,
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MPFGAMM02CO001_01?$w1000$&fmt=auto&qlt=default",
+    "priceKrw": 210000,
     "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
       "productionCatalog": true,
+      "recognitionTest": false,
+      "recommendationCandidate": true,
+      "recommendationGroup": "fragrance",
+      "variant": "100ml",
+      "color": "Cognac",
       "source": "MCM Korea official",
-      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%8C%A8%EC%85%98%EC%86%8C%ED%92%88/%ED%96%A5%EC%88%98/diamond-%EC%98%A4-%EB%93%9C-%ED%8D%BC%ED%93%B8/MPFEAMM06BK001.html",
-      "priceBasis": "MCM Korea official retail list price; duty-free selling price not verified",
-      "inventoryNote": "Demo mapping to both selected MCM duty-free stores; live stock not verified",
-      "imageFileSuggestion": "mcm-diamond-edp-50ml-MPFEAMM06BK001.jpg"
+      "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
     },
     "storeIds": [
       "10000000-0000-0000-0000-000000000005",
@@ -115,289 +175,128 @@
     ]
   },
   {
-    "productId": "test_outer_001",
-    "sku": "MUSINSA-5477019",
-    "brand": "HAVE HAD",
-    "name": "워시드 포켓 유틸리티 자켓 (데님 블루)",
-    "category": "jacket",
-    "imageUrl": "https://example.com/products/test_outer_001.jpg",
-    "priceKrw": 159000,
-    "estimatedRefundKrw": 0,
-    "taxRefundSupported": false,
-    "metadata": {
-      "demo": true,
-      "recognitionTest": true,
-      "source": "musinsa",
-      "musinsaProductId": "5477019"
-    },
-    "storeIds": []
-  },
-  {
-    "productId": "test_outer_002",
-    "sku": "MUSINSA-2713777",
-    "brand": "TEST",
-    "name": "Test Outer 02",
-    "category": "jacket",
-    "imageUrl": "https://example.com/products/test_outer_002.jpg",
-    "priceKrw": 100000,
-    "estimatedRefundKrw": 0,
-    "taxRefundSupported": false,
-    "metadata": {
-      "demo": true,
-      "recognitionTest": true,
-      "source": "musinsa",
-      "musinsaProductId": "2713777"
-    },
-    "storeIds": []
-  },
-  {
-    "productId": "test_outer_003",
-    "sku": "MUSINSA-4347271",
-    "brand": "KIIMUIR",
-    "name": "빈티지 워크 자켓_차콜",
-    "category": "jacket",
-    "imageUrl": "https://example.com/products/test_outer_003.jpg",
-    "priceKrw": 129000,
-    "estimatedRefundKrw": 0,
-    "taxRefundSupported": false,
-    "metadata": {
-      "demo": true,
-      "recognitionTest": true,
-      "source": "musinsa",
-      "musinsaProductId": "4347271"
-    },
-    "storeIds": []
-  },
-  {
-    "productId": "demo_mouse_001",
-    "sku": "DEMO-LOGITECH-M185-GRAY",
-    "brand": "Logitech",
-    "name": "M185 무선 마우스 (그레이)",
-    "category": "mouse",
-    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Logitech_M185_mouse_HS05.jpg/960px-Logitech_M185_mouse_HS05.jpg",
-    "priceKrw": 25000,
-    "estimatedRefundKrw": 1000,
-    "taxRefundSupported": true,
-    "metadata": {
-      "demo": true,
-      "a4Demo": true,
-      "recognitionTest": true,
-      "source": "wikimedia-commons",
-      "license": "CC-BY-4.0"
-    },
-    "storeIds": []
-  },
-  {
-    "productId": "demo_perfume_001",
-    "sku": "DEMO-DIPTYQUE-PAPIER-100",
-    "brand": "Diptyque",
-    "name": "로 파피에 오 드 뚜왈렛 100ml",
-    "category": "perfume",
-    "imageUrl": "https://img.kingpowerclick.com/cdn-cgi/image/format=auto/kingpower-com/image/upload/w_640/v1753241145/prod/1008697-L1.jpg",
-    "priceKrw": 235000,
-    "estimatedRefundKrw": 13000,
-    "taxRefundSupported": true,
-    "metadata": {
-      "demo": true,
-      "a4Demo": true,
-      "recognitionTest": true,
-      "source": "kingpower"
-    },
-    "storeIds": []
-  },
-  {
-    "productId": "demo_lotion_001",
-    "sku": "DEMO-BRINGGREEN-TEATREE-CICA-100",
-    "brand": "BRINGGREEN",
-    "name": "티트리 시카 수딩 크림 100ml",
-    "category": "lotion",
-    "imageUrl": "https://image.oliveyoung.co.kr/cfimages/cf-goods/uploads/images/thumbnails/10/0000/0022/A00000022655337ko.jpg?l=ko",
-    "priceKrw": 16000,
-    "estimatedRefundKrw": 1000,
-    "taxRefundSupported": true,
-    "metadata": {
-      "demo": true,
-      "a4Demo": true,
-      "recognitionTest": true,
-      "source": "oliveyoung"
-    },
-    "storeIds": []
-  },
-  {
-    "productId": "demo_bag_001",
-    "sku": "DEMO-STARK-BACKPACK-001",
-    "brand": "Demo Atelier",
-    "name": "Stark Backpack",
-    "category": "bag",
-    "imageUrl": "https://example.com/products/demo_bag_001.jpg",
-    "priceKrw": 890000,
-    "estimatedRefundKrw": 62000,
-    "taxRefundSupported": true,
-    "metadata": {
-      "demo": true,
-      "b6Demo": true,
-      "description": "도시 여행에 어울리는 구조적인 블랙 백팩"
-    },
-    "storeIds": []
-  },
-  {
-    "productId": "demo_bag_002",
-    "sku": "DEMO-SEOUL-MINI-TOTE-002",
-    "brand": "Demo Maison",
-    "name": "Seoul Mini Tote",
-    "category": "bag",
-    "imageUrl": "https://example.com/products/demo_bag_002.jpg",
-    "priceKrw": 1250000,
-    "estimatedRefundKrw": 87000,
-    "taxRefundSupported": true,
-    "metadata": {
-      "demo": true,
-      "b6Demo": true,
-      "description": "가볍게 들 수 있는 미니 사이즈 토트백"
-    },
-    "storeIds": []
-  },
-  {
-    "productId": "demo_bag_003",
-    "sku": "DEMO-CLASSIC-CROSSBODY-003",
-    "brand": "Demo Heritage",
-    "name": "Classic Crossbody",
-    "category": "bag",
-    "imageUrl": "https://example.com/products/demo_bag_003.jpg",
-    "priceKrw": 760000,
-    "estimatedRefundKrw": 53000,
-    "taxRefundSupported": true,
-    "metadata": {
-      "demo": true,
-      "b6Demo": true,
-      "description": "여행 중 손이 자유로운 클래식 크로스바디백"
-    },
-    "storeIds": []
-  },
-  {
-    "productId": "demo_perfume_002",
-    "sku": "DEMO-MIDNIGHT-SEOUL-50",
-    "brand": "Demo Parfums",
-    "name": "Midnight Seoul Eau de Parfum 50ml",
-    "category": "perfume",
-    "imageUrl": "https://example.com/products/demo_perfume_002.jpg",
-    "priceKrw": 210000,
-    "estimatedRefundKrw": 15000,
-    "taxRefundSupported": true,
-    "metadata": {
-      "demo": true,
-      "b6Demo": true,
-      "description": "우디 앰버 계열의 데모 오 드 퍼퓸"
-    },
-    "storeIds": []
-  },
-  {
-    "productId": "demo_perfume_003",
-    "sku": "DEMO-GARDEN-MUSK-75",
-    "brand": "Demo Parfums",
-    "name": "Garden Musk Eau de Parfum 75ml",
-    "category": "perfume",
-    "imageUrl": "https://example.com/products/demo_perfume_003.jpg",
-    "priceKrw": 245000,
-    "estimatedRefundKrw": 17000,
-    "taxRefundSupported": true,
-    "metadata": {
-      "demo": true,
-      "b6Demo": true,
-      "description": "플로럴 머스크 계열의 데모 오 드 퍼퓸"
-    },
-    "storeIds": []
-  },
-  {
-    "productId": "demo_perfume_004",
-    "sku": "DEMO-CEDAR-VOYAGE-100",
-    "brand": "Demo Scent Lab",
-    "name": "Cedar Voyage Eau de Toilette 100ml",
-    "category": "perfume",
-    "imageUrl": "https://example.com/products/demo_perfume_004.jpg",
-    "priceKrw": 185000,
-    "estimatedRefundKrw": 12000,
-    "taxRefundSupported": true,
-    "metadata": {
-      "demo": true,
-      "b6Demo": true,
-      "description": "시더우드와 시트러스가 어우러진 여행용 향수"
-    },
-    "storeIds": []
-  },
-  {
-    "productId": "mcm_001",
-    "sku": "MCM-MOCK-001",
+    "productId": "mcm_mighty_bear_100_001",
+    "sku": "MPFFSMM04CO001",
     "brand": "MCM",
-    "name": "Mock Stark Backpack",
+    "name": "Mighty Bear 오 드 퍼퓸 100ml",
+    "category": "perfume",
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MPFFSMM04CO001_01?$w1000$&fmt=auto&qlt=default",
+    "priceKrw": 210000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": false,
+    "metadata": {
+      "productionCatalog": true,
+      "recognitionTest": false,
+      "recommendationCandidate": true,
+      "recommendationGroup": "fragrance",
+      "variant": "100ml",
+      "color": "Cognac",
+      "source": "MCM Korea official",
+      "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
+    },
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000005",
+      "10000000-0000-0000-0000-000000000008"
+    ]
+  },
+  {
+    "productId": "mcm_aren_ew_shoulder_s_001",
+    "sku": "MWSGSTA02CO001",
+    "brand": "MCM",
+    "name": "Aren 비세토스 E/W 숄더백 S",
     "category": "bag",
-    "imageUrl": "https://example.com/products/mcm_001.jpg",
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MWSGSTA02CO001_01?$w1000$&fmt=auto&qlt=default",
     "priceKrw": 1090000,
     "estimatedRefundKrw": 0,
-    "taxRefundSupported": true,
+    "taxRefundSupported": false,
     "metadata": {
-      "demo": true
+      "productionCatalog": true,
+      "recognitionTest": false,
+      "recommendationCandidate": true,
+      "recommendationGroup": "bag",
+      "size": "S",
+      "color": "Cognac",
+      "source": "MCM Korea official",
+      "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
     },
-    "storeIds": []
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000005",
+      "10000000-0000-0000-0000-000000000008"
+    ]
   },
   {
-    "productId": "mcm_002",
-    "sku": "MCM-MOCK-002",
+    "productId": "mcm_diamond_shoulder_mini_001",
+    "sku": "MWRGAAK01BK001",
     "brand": "MCM",
-    "name": "Mock Aren Shoulder Bag",
+    "name": "Diamond 비세토스 레더 믹스 숄더백 Mini",
     "category": "bag",
-    "imageUrl": "https://example.com/products/mcm_002.jpg",
-    "priceKrw": 890000,
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MWRGAAK01BK001_01?$w1000$&fmt=auto&qlt=default",
+    "priceKrw": 930000,
     "estimatedRefundKrw": 0,
-    "taxRefundSupported": true,
+    "taxRefundSupported": false,
     "metadata": {
-      "demo": true
+      "productionCatalog": true,
+      "recognitionTest": false,
+      "recommendationCandidate": true,
+      "recommendationGroup": "bag",
+      "size": "Mini",
+      "color": "Black",
+      "source": "MCM Korea official",
+      "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
     },
-    "storeIds": []
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000005",
+      "10000000-0000-0000-0000-000000000008"
+    ]
   },
   {
-    "productId": "mcm_003",
-    "sku": "MCM-MOCK-003",
+    "productId": "mcm_new_liz_shopper_m_001",
+    "sku": "MWPGALR01BK001",
     "brand": "MCM",
-    "name": "Mock Visetos Wallet",
-    "category": "wallet",
-    "imageUrl": "https://example.com/products/mcm_003.jpg",
-    "priceKrw": 390000,
+    "name": "New Liz 엠보스드 모노그램 레더 쇼퍼 M",
+    "category": "bag",
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MWPGALR01BK001_01?$w1000$&fmt=auto&qlt=default",
+    "priceKrw": 1490000,
     "estimatedRefundKrw": 0,
-    "taxRefundSupported": true,
+    "taxRefundSupported": false,
     "metadata": {
-      "demo": true
+      "productionCatalog": true,
+      "recognitionTest": false,
+      "recommendationCandidate": true,
+      "recommendationGroup": "bag",
+      "size": "M",
+      "color": "Black",
+      "source": "MCM Korea official",
+      "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
     },
-    "storeIds": []
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000005",
+      "10000000-0000-0000-0000-000000000008"
+    ]
   },
   {
-    "productId": "mcm_004",
-    "sku": "MCM-MOCK-004",
+    "productId": "mcm_pina_studded_tote_m_001",
+    "sku": "MWTGATA02CO001",
     "brand": "MCM",
-    "name": "Mock Liz Shopper",
-    "category": "tote",
-    "imageUrl": "https://example.com/products/mcm_004.jpg",
-    "priceKrw": 950000,
+    "name": "Pina 비세토스 스터드 장식 토트 M",
+    "category": "bag",
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MWTGATA02CO001_01?$w1000$&fmt=auto&qlt=default",
+    "priceKrw": 1690000,
     "estimatedRefundKrw": 0,
-    "taxRefundSupported": true,
+    "taxRefundSupported": false,
     "metadata": {
-      "demo": true
+      "productionCatalog": true,
+      "recognitionTest": false,
+      "recommendationCandidate": true,
+      "recommendationGroup": "bag",
+      "size": "M",
+      "color": "Cognac",
+      "source": "MCM Korea official",
+      "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
     },
-    "storeIds": []
-  },
-  {
-    "productId": "mcm_005",
-    "sku": "MCM-MOCK-005",
-    "brand": "MCM",
-    "name": "Mock Claus Card Case",
-    "category": "card_case",
-    "imageUrl": "https://example.com/products/mcm_005.jpg",
-    "priceKrw": 290000,
-    "estimatedRefundKrw": 0,
-    "taxRefundSupported": true,
-    "metadata": {
-      "demo": true
-    },
-    "storeIds": []
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000005",
+      "10000000-0000-0000-0000-000000000008"
+    ]
   }
 ]
