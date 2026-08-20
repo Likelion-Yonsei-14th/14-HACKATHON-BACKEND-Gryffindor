@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.domain.enums import PurchaseState
 from app.models.personalization import (
     Flight,
     Receipt,
@@ -127,6 +128,25 @@ class PersonalizationRepository:
                 joinedload(SessionProduct.shopping_session).joinedload(ShoppingSession.store),
             )
             .where(SessionProduct.session_id.in_(recent_session_ids))
+            .order_by(SessionProduct.last_observed_at.desc())
+        )
+        return list(self._db.scalars(statement).all())
+
+    def list_session_purchased_products(
+        self,
+        user_id: int,
+    ) -> list[SessionProduct]:
+        statement = (
+            select(SessionProduct)
+            .join(SessionProduct.shopping_session)
+            .options(
+                joinedload(SessionProduct.product),
+                joinedload(SessionProduct.shopping_session).joinedload(ShoppingSession.store),
+            )
+            .where(
+                ShoppingSession.user_id == user_id,
+                SessionProduct.purchase_state == PurchaseState.PURCHASED,
+            )
             .order_by(SessionProduct.last_observed_at.desc())
         )
         return list(self._db.scalars(statement).all())

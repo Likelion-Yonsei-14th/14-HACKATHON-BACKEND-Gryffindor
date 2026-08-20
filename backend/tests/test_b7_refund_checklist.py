@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from decimal import Decimal
 from io import BytesIO
 from typing import Any, cast
 from uuid import UUID
@@ -12,9 +13,11 @@ from sqlalchemy.orm import Session
 
 from app.api.me import get_document_extraction_provider
 from app.constants import DEMO_USER_ID
-from app.domain.enums import RefundMethod
+from app.domain.enums import PurchaseState, RefundMethod, TriggerType
 from app.models.personalization import Flight, Receipt, ReceiptItem
 from app.models.product import Product
+from app.models.shopping import SessionProduct, ShoppingSession
+from app.models.store import Store
 from app.providers.documents import FlightExtraction, ReceiptExtraction, ReceiptItemExtraction
 from app.services.refund_checklist import RefundChecklistService
 
@@ -57,7 +60,7 @@ def _add_purchase(
     trip_id: UUID,
     *,
     refund_method: RefundMethod,
-    product_id: str = "demo_mouse_001",
+    product_id: str = "diptyque_leau_papier_100_001",
     total_amount: int | None = 25_000,
     currency: str | None = "KRW",
     purchased_at: datetime | None = None,
@@ -85,6 +88,38 @@ def _add_purchase(
     return purchase
 
 
+def _add_session_product(
+    db: Session,
+    *,
+    product_id: str,
+    purchase_state: PurchaseState,
+    interested: bool = False,
+) -> SessionProduct:
+    product = _product(db, product_id)
+    store = db.scalar(select(Store).where(Store.is_active.is_(True)).limit(1))
+    assert store is not None
+    shopping_session = ShoppingSession(
+        user_id=DEMO_USER_ID,
+        store_id=store.id,
+        currency="KRW",
+    )
+    session_product = SessionProduct(
+        shopping_session=shopping_session,
+        product=product,
+        first_observed_at=datetime(2026, 8, 20, 10, tzinfo=UTC),
+        last_observed_at=datetime(2026, 8, 20, 10, tzinfo=UTC),
+        max_occupancy_ratio=Decimal("0.3"),
+        max_dwell_ms=1500,
+        last_trigger_type=TriggerType.OCCUPANCY_AND_DWELL,
+        observation_count=1,
+        purchase_state=purchase_state,
+        interested=interested,
+    )
+    db.add(session_product)
+    db.commit()
+    return session_product
+
+
 def _checklist(client: TestClient, trip_id: UUID) -> dict[str, Any]:
     response = client.get(f"/api/v1/me/trips/{trip_id}/refund-checklist")
     assert response.status_code == 200
@@ -96,7 +131,84 @@ def _item_ids(payload: dict[str, Any]) -> list[str]:
     return [item["id"] for item in items]
 
 
-def test_no_refund_supported_purchase_returns_empty_items(
+def test_session_purchased_with_unsupported_refund_metadata_returns_default_checklist(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    trip_id = _create_trip(client)
+    product = _product(db_session, "diptyque_leau_papier_100_001")
+    assert product.tax_refund_supported is False
+    assert product.estimated_refund_krw == 0
+    session_product = _add_session_product(
+        db_session,
+        product_id=product.product_id,
+        purchase_state=PurchaseState.UNSET,
+    )
+
+    review = client.put(
+        f"/api/v1/sessions/{session_product.session_id}/review",
+        json={
+            "purchasedProductIds": [product.product_id],
+            "interestedProductIds": [],
+        },
+    )
+    assert review.status_code == 200
+    assert db_session.scalar(select(Receipt.id)) is None
+
+    payload = _checklist(client, trip_id)
+
+    assert set(payload) == {"tripId", "status", "items", "notice"}
+    assert payload["tripId"] == str(trip_id)
+    assert payload["status"] == "ACTION_REQUIRED"
+    assert _item_ids(payload) == [
+        "prepare-refund-documents",
+        "prepare-purchased-goods",
+        "customs-export-confirmation",
+        "receive-refund",
+    ]
+    assert all(
+        set(item) == {"id", "title", "description", "required"}
+        for item in payload["items"]
+    )
+
+
+def test_session_purchased_without_receipt_returns_items(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    trip_id = _create_trip(client)
+    _add_session_product(
+        db_session,
+        product_id="dashu_aqua_dive_50_001",
+        purchase_state=PurchaseState.PURCHASED,
+    )
+    assert db_session.scalar(select(Receipt.id)) is None
+
+    payload = _checklist(client, trip_id)
+
+    assert payload["status"] == "ACTION_REQUIRED"
+    assert payload["items"]
+
+
+def test_no_purchased_session_products_and_no_receipts_returns_empty_items(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    trip_id = _create_trip(client)
+    _add_session_product(
+        db_session,
+        product_id="dashu_aqua_dive_50_001",
+        purchase_state=PurchaseState.UNSET,
+        interested=True,
+    )
+
+    payload = _checklist(client, trip_id)
+
+    assert payload["status"] == "NO_ELIGIBLE_PURCHASES"
+    assert payload["items"] == []
+
+
+def test_receipt_purchase_without_refund_supported_product_returns_items(
     client: TestClient,
     db_session: Session,
 ) -> None:
@@ -105,7 +217,7 @@ def test_no_refund_supported_purchase_returns_empty_items(
         db_session,
         trip_id,
         refund_method=RefundMethod.UNKNOWN,
-        product_id="test_outer_001",
+        product_id="diptyque_leau_papier_100_001",
     )
     fallback_purchase = Receipt(
         user_id=DEMO_USER_ID,
@@ -128,8 +240,13 @@ def test_no_refund_supported_purchase_returns_empty_items(
 
     payload = _checklist(client, trip_id)
 
-    assert payload["status"] == "NO_ELIGIBLE_PURCHASES"
-    assert payload["items"] == []
+    assert payload["status"] == "ACTION_REQUIRED"
+    assert _item_ids(payload) == [
+        "prepare-refund-documents",
+        "prepare-purchased-goods",
+        "customs-export-confirmation",
+        "receive-refund",
+    ]
 
 
 def test_immediate_only_has_no_refund_receipt_step(

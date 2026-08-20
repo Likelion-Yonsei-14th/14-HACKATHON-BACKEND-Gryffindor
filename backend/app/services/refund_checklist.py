@@ -82,10 +82,10 @@ class RefundChecklistService:
             raise AppError(404, "TRIP_NOT_FOUND", "Trip was not found.")
 
         purchases = self._personalization.list_trip_receipts(DEMO_USER_ID, trip_id)
-        eligible_purchases = [purchase for purchase in purchases if _is_refund_supported(purchase)]
-        potential_eligibility = self._potential_immediate_eligibility(eligible_purchases)
+        session_purchases = self._personalization.list_session_purchased_products(DEMO_USER_ID)
+        potential_eligibility = self._potential_immediate_eligibility(purchases)
 
-        if not eligible_purchases:
+        if not purchases and not session_purchases:
             return RefundChecklistResult(
                 trip_id=trip_id,
                 status=RefundChecklistStatus.NO_ELIGIBLE_PURCHASES,
@@ -97,10 +97,14 @@ class RefundChecklistService:
         departure_at = latest_flight.departure_at if latest_flight is not None else None
         has_deadline_warning = any(
             _exceeds_export_deadline(purchase.purchased_at, departure_at)
-            for purchase in eligible_purchases
+            for purchase in purchases
         )
 
-        methods = {purchase.refund_method for purchase in eligible_purchases}
+        methods = {purchase.refund_method for purchase in purchases}
+        if session_purchases:
+            # Review purchases have no receipt/refund-method relation in the demo schema.
+            # Treat them as an active-trip purchase whose refund method is not yet known.
+            methods.add(RefundMethod.UNKNOWN)
         if methods == {RefundMethod.IMMEDIATE}:
             items = [_EXPORT_DEADLINE_WARNING] if has_deadline_warning else []
             return RefundChecklistResult(
@@ -162,12 +166,6 @@ class RefundChecklistService:
                 projected_total,
             )
         return results
-
-
-def _is_refund_supported(purchase: Receipt) -> bool:
-    return any(
-        item.product is not None and item.product.tax_refund_supported for item in purchase.items
-    )
 
 
 def _known_krw_total(purchase: Receipt) -> int | None:
