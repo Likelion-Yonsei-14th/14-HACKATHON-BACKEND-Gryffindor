@@ -1,10 +1,12 @@
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.health import router as health_router
@@ -20,6 +22,7 @@ from app.providers.openclip_embedding import OpenCLIPImageEmbedder
 from app.services.exchange_rates import ExchangeRateService, ExchangeRateUnavailableError
 
 logger = logging.getLogger(__name__)
+STATIC_DIR = Path(__file__).resolve().parents[1] / "static"
 
 
 @asynccontextmanager
@@ -76,6 +79,7 @@ def create_app(*, enable_exchange_rate_startup: bool = True) -> FastAPI:
     application.include_router(sessions_router)
     application.include_router(me_router)
     application.include_router(trips_router)
+    application.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     application.state.exchange_rate_startup_enabled = enable_exchange_rate_startup
     return application
 
