@@ -18,12 +18,12 @@ from app.domain.enums import RecognitionStatus
 from app.models.currency_rate import CurrencyRate
 from app.models.shopping import SessionProduct, ShoppingSession
 from app.models.store import Store
-from app.providers.mock_recognition import MockRecognitionProvider
 from app.providers.recognition import (
     RecognitionCandidate,
     RecognitionDecision,
     RecognitionProviderError,
 )
+from app.providers.scripted_recognition import ScriptedRecognitionProvider
 
 
 class StaticRecognitionProvider:
@@ -70,7 +70,7 @@ class DebugImageCheckingProvider:
         return RecognitionDecision(status=RecognitionStatus.UNKNOWN)
 
 
-def get_demo_store_id(client: TestClient) -> str:
+def get_catalog_store_id(client: TestClient) -> str:
     response = client.get("/api/v1/stores")
     assert response.status_code == 200
     return str(response.json()["stores"][0]["id"])
@@ -79,7 +79,7 @@ def get_demo_store_id(client: TestClient) -> str:
 def create_session(client: TestClient, currency: str = "CNY") -> str:
     response = client.post(
         "/api/v1/sessions",
-        json={"currency": currency, "storeId": get_demo_store_id(client)},
+        json={"currency": currency, "storeId": get_catalog_store_id(client)},
     )
     assert response.status_code == 201
     return str(response.json()["sessionId"])
@@ -182,7 +182,7 @@ def test_recognition_debug_image_is_saved_before_provider_call(
 
 
 def test_create_session_matches_contract(client: TestClient, db_session: Session) -> None:
-    store_id = get_demo_store_id(client)
+    store_id = get_catalog_store_id(client)
     response = client.post(
         "/api/v1/sessions",
         json={"currency": "CNY", "storeId": store_id},
@@ -221,7 +221,7 @@ def test_create_session_rejects_inactive_store(
     client: TestClient,
     db_session: Session,
 ) -> None:
-    store = db_session.get(Store, UUID(get_demo_store_id(client)))
+    store = db_session.get(Store, UUID(get_catalog_store_id(client)))
     assert store is not None
     store.is_active = False
     db_session.commit()
@@ -242,7 +242,7 @@ def test_create_session_requires_store_id(client: TestClient) -> None:
     assert response.json()["error"]["code"] == "INVALID_REQUEST"
 
 
-def test_mock_vertical_slice_and_duplicate_upsert(
+def test_scripted_vertical_slice_and_duplicate_upsert(
     client: TestClient,
     db_session: Session,
 ) -> None:
@@ -258,25 +258,19 @@ def test_mock_vertical_slice_and_duplicate_upsert(
     assert first_body["isNew"] is True
     assert set(first_body) == {"recognitionStatus", "isNew", "observedProduct"}
     observed = first_body["observedProduct"]
-    assert observed["product"] == {
-        "productId": "test_outer_001",
-        "sku": "MUSINSA-5477019",
-        "brand": "HAVE HAD",
-        "name": "워시드 포켓 유틸리티 자켓 (데님 블루)",
-        "category": "jacket",
-        "imageUrl": "https://example.com/products/test_outer_001.jpg",
-    }
+    assert observed["product"]["productId"] == "diptyque_leau_papier_100_001"
+    assert observed["product"]["sku"] == "DIPTYQUE-PAPIER-100"
     assert observed["pricing"] == {
-        "retailPriceKrw": 159_000,
-        "estimatedRefundKrw": 0,
-        "estimatedRefundPriceKrw": 159_000,
-        "convertedRetailPrice": "804.32",
-        "convertedEstimatedRefund": "0.00",
-        "convertedEstimatedRefundPrice": "804.32",
-        "convertedAmount": "804.32",
+        "retailPriceKrw": 282_000,
+        "estimatedRefundKrw": 19_740,
+        "estimatedRefundPriceKrw": 262_260,
+        "convertedRetailPrice": "1426.52",
+        "convertedEstimatedRefund": "99.86",
+        "convertedEstimatedRefundPrice": "1326.67",
+        "convertedAmount": "1326.67",
         "convertedCurrency": "CNY",
         "instantRefundEligible": False,
-        "pricingMode": "MOCK",
+        "pricingMode": "ESTIMATED",
     }
 
     second_response = recognize(
@@ -308,7 +302,7 @@ def test_mock_vertical_slice_and_duplicate_upsert(
     list_body = list_response.json()
     assert list_body["sessionId"] == session_id
     assert len(list_body["items"]) == 1
-    assert list_body["items"][0]["product"]["productId"] == "test_outer_001"
+    assert list_body["items"][0]["product"]["productId"] == "diptyque_leau_papier_100_001"
     assert list_body["items"][0]["purchaseState"] == "UNSET"
     assert list_body["items"][0]["interested"] is False
 
@@ -324,10 +318,10 @@ def test_usd_session_returns_both_krw_and_usd_amounts(client: TestClient) -> Non
 
     assert response.status_code == 200
     pricing = response.json()["observedProduct"]["pricing"]
-    assert pricing["retailPriceKrw"] == 159_000
-    assert pricing["convertedRetailPrice"] == "115.62"
-    assert pricing["convertedEstimatedRefund"] == "0.00"
-    assert pricing["convertedEstimatedRefundPrice"] == "115.62"
+    assert pricing["retailPriceKrw"] == 282_000
+    assert pricing["convertedRetailPrice"] == "205.06"
+    assert pricing["convertedEstimatedRefund"] == "14.35"
+    assert pricing["convertedEstimatedRefundPrice"] == "190.71"
     assert pricing["convertedAmount"] == pricing["convertedEstimatedRefundPrice"]
     assert pricing["convertedCurrency"] == "USD"
 
@@ -339,7 +333,7 @@ def test_session_rejects_unsupported_target_currency(
 ) -> None:
     response = client.post(
         "/api/v1/sessions",
-        json={"currency": currency, "storeId": get_demo_store_id(client)},
+        json={"currency": currency, "storeId": get_catalog_store_id(client)},
     )
 
     assert response.status_code == 422
@@ -366,21 +360,21 @@ def test_recognition_succeeds_with_krw_prices_when_rate_cache_is_missing(
     assert body["isNew"] is True
     pricing = body["observedProduct"]["pricing"]
     assert pricing == {
-        "retailPriceKrw": 159_000,
-        "estimatedRefundKrw": 0,
-        "estimatedRefundPriceKrw": 159_000,
+        "retailPriceKrw": 282_000,
+        "estimatedRefundKrw": 19_740,
+        "estimatedRefundPriceKrw": 262_260,
         "convertedCurrency": "CNY",
         "instantRefundEligible": False,
-        "pricingMode": "MOCK",
+        "pricingMode": "ESTIMATED",
     }
     assert db_session.scalar(select(func.count()).select_from(SessionProduct)) == 1
 
     list_response = client.get(f"/api/v1/sessions/{session_id}/products")
     assert list_response.status_code == 200
     list_pricing = list_response.json()["items"][0]["pricing"]
-    assert list_pricing["retailPriceKrw"] == 159_000
-    assert list_pricing["estimatedRefundKrw"] == 0
-    assert list_pricing["estimatedRefundPriceKrw"] == 159_000
+    assert list_pricing["retailPriceKrw"] == 282_000
+    assert list_pricing["estimatedRefundKrw"] == 19_740
+    assert list_pricing["estimatedRefundPriceKrw"] == 262_260
     assert list_pricing["convertedRetailPrice"] is None
     assert list_pricing["convertedEstimatedRefund"] is None
     assert list_pricing["convertedEstimatedRefundPrice"] is None
@@ -395,7 +389,10 @@ def test_recognition_succeeds_with_krw_prices_when_rate_cache_is_missing(
             RecognitionStatus.AMBIGUOUS,
             {
                 "recognitionStatus": "AMBIGUOUS",
-                "candidateProductIds": ["demo_lotion_001", "demo_mouse_001"],
+                "candidateProductIds": [
+                    "anillo_fragrance_of_life_10_001",
+                    "dashu_aqua_dive_50_001",
+                ],
             },
         ),
         (RecognitionStatus.UNKNOWN, {"recognitionStatus": "UNKNOWN"}),
@@ -408,7 +405,7 @@ def test_non_match_results_are_not_stored(
     recognition_status: RecognitionStatus,
     expected_body: dict[str, object],
 ) -> None:
-    test_app.dependency_overrides[get_recognition_provider] = lambda: MockRecognitionProvider(
+    test_app.dependency_overrides[get_recognition_provider] = lambda: ScriptedRecognitionProvider(
         status=recognition_status
     )
     session_id = create_session(client)
@@ -546,7 +543,7 @@ def test_provider_failure_is_mapped_to_contract_error(
     client: TestClient,
     test_app: FastAPI,
 ) -> None:
-    test_app.dependency_overrides[get_recognition_provider] = lambda: MockRecognitionProvider(
+    test_app.dependency_overrides[get_recognition_provider] = lambda: ScriptedRecognitionProvider(
         should_fail=True
     )
     session_id = create_session(client)
@@ -594,7 +591,7 @@ def test_common_provider_error_is_mapped_to_contract_error(
         ),
         RecognitionDecision(
             status=RecognitionStatus.AMBIGUOUS,
-            candidate_product_ids=("test_outer_001", "invented_product_id"),
+            candidate_product_ids=("diptyque_leau_papier_100_001", "invented_product_id"),
         ),
     ],
 )
@@ -627,7 +624,7 @@ def test_real_provider_shape_uses_same_matched_api_dto(
     test_app.dependency_overrides[get_recognition_provider] = lambda: StaticRecognitionProvider(
         decision=RecognitionDecision(
             status=RecognitionStatus.MATCHED,
-            product_id="test_outer_002",
+            product_id="dashu_aqua_dive_50_001",
         )
     )
     session_id = create_session(client)
@@ -642,10 +639,10 @@ def test_real_provider_shape_uses_same_matched_api_dto(
     body = response.json()
     assert set(body) == {"recognitionStatus", "isNew", "observedProduct"}
     assert body["recognitionStatus"] == "MATCHED"
-    assert body["observedProduct"]["product"]["productId"] == "test_outer_002"
+    assert body["observedProduct"]["product"]["productId"] == "dashu_aqua_dive_50_001"
 
 
-def test_a4_demo_products_are_the_three_candidate_allowlist_with_reference_images(
+def test_recognition_products_are_the_candidate_allowlist_with_reference_images(
     client: TestClient,
     test_app: FastAPI,
 ) -> None:
@@ -653,7 +650,7 @@ def test_a4_demo_products_are_the_three_candidate_allowlist_with_reference_image
         decision=RecognitionDecision(status=RecognitionStatus.UNKNOWN)
     )
     test_app.dependency_overrides[get_recognition_provider] = lambda: provider
-    test_app.dependency_overrides[get_settings] = lambda: Settings(recognition_max_candidates=3)
+    test_app.dependency_overrides[get_settings] = lambda: Settings(recognition_max_candidates=8)
     session_id = create_session(client)
 
     response = recognize(
@@ -664,18 +661,16 @@ def test_a4_demo_products_are_the_three_candidate_allowlist_with_reference_image
 
     assert response.status_code == 200
     assert [candidate.product_id for candidate in provider.candidates] == [
-        "demo_lotion_001",
-        "demo_mouse_001",
-        "demo_perfume_001",
+        "anillo_fragrance_of_life_10_001",
+        "dashu_aqua_dive_50_001",
+        "dior_beauty_velvet_pouch_black_001",
+        "dior_saddle_bloom_card_wallet_s5611ctzq_m928_001",
+        "diptyque_leau_papier_100_001",
+        "hatchingroom_wavy_bag_mini_nylon_001",
+        "vivienne_westwood_wallet_5115002ew_001",
+        "zara_leather_tote_001",
     ]
-    assert [candidate.reference_image_url for candidate in provider.candidates] == [
-        "https://image.oliveyoung.co.kr/cfimages/cf-goods/uploads/images/thumbnails/10/"
-        "0000/0022/A00000022655337ko.jpg?l=ko",
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/"
-        "Logitech_M185_mouse_HS05.jpg/960px-Logitech_M185_mouse_HS05.jpg",
-        "https://img.kingpowerclick.com/cdn-cgi/image/format=auto/kingpower-com/image/"
-        "upload/w_640/v1753241145/prod/1008697-L1.jpg",
-    ]
+    assert all(candidate.reference_image_url for candidate in provider.candidates)
 
 
 def test_valid_ambiguous_ids_are_filtered_and_deduplicated(
@@ -686,10 +681,10 @@ def test_valid_ambiguous_ids_are_filtered_and_deduplicated(
         decision=RecognitionDecision(
             status=RecognitionStatus.AMBIGUOUS,
             candidate_product_ids=(
-                "test_outer_001",
+                "diptyque_leau_papier_100_001",
                 "invented_product_id",
-                "test_outer_001",
-                "test_outer_002",
+                "diptyque_leau_papier_100_001",
+                "dashu_aqua_dive_50_001",
             ),
         )
     )
@@ -704,7 +699,7 @@ def test_valid_ambiguous_ids_are_filtered_and_deduplicated(
     assert response.status_code == 200
     assert response.json() == {
         "recognitionStatus": "AMBIGUOUS",
-        "candidateProductIds": ["test_outer_001", "test_outer_002"],
+        "candidateProductIds": ["diptyque_leau_papier_100_001", "dashu_aqua_dive_50_001"],
     }
 
 

@@ -1,2 +1,2 @@
-DEMO_USER_ID = 1
-DEMO_USER_NAME = "Demo User"
+SINGLE_USER_ID = 1
+SINGLE_USER_NAME = "Single User"

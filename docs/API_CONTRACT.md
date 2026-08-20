@@ -7,7 +7,7 @@
 - 서버 내부 Python model은 snake_case여도 API alias를 통해 camelCase를 유지한다.
 - 시간은 ISO 8601 UTC로 반환한다.
 - 금액은 KRW 정수 또는 Decimal 기반 값으로 처리한다.
-- OpenAI Provider / Mock Provider 여부와 관계없이 동일한 DTO를 반환한다.
+- Recognition Provider 구현과 관계없이 동일한 DTO를 반환한다.
 - UI 병렬 작업 시작 후 기존 필드 삭제·이름 변경을 피한다.
 
 ## 2. Health
@@ -69,7 +69,7 @@ Response `200`:
     "storeId": "uuid",
     "name": "Seoul Center Department Store A",
     "type": "DEPARTMENT_STORE",
-    "address": "서울특별시 중구 을지로 30 인근 (Demo)",
+    "address": "서울특별시 중구 을지로 30 인근",
     "latitude": 37.5646,
     "longitude": 126.9813,
     "distanceKm": 0.53,
@@ -172,7 +172,7 @@ Backend는 `occupancyRatio`를 다시 CV로 계산하지 않는다. 범위 valid
       "convertedAmount": "5129.41",
       "convertedCurrency": "CNY",
       "instantRefundEligible": false,
-      "pricingMode": "MOCK"
+      "pricingMode": "ESTIMATED"
     },
     "observation": {
       "triggerType": "OCCUPANCY_AND_DWELL",
@@ -235,7 +235,7 @@ Response:
         "convertedAmount": "5129.41",
         "convertedCurrency": "CNY",
         "instantRefundEligible": false,
-        "pricingMode": "MOCK"
+        "pricingMode": "ESTIMATED"
       },
       "purchaseState": "UNSET",
       "interested": false
@@ -331,8 +331,7 @@ Response:
       "description": "환급 확인을 위해 구매 증빙을 준비합니다.",
       "required": true
     }
-  ],
-  "mode": "MOCK"
+  ]
 }
 ```
 
@@ -376,8 +375,7 @@ Response:
       },
       "reasonCode": "INTERESTED_NOT_PURCHASED"
     }
-  ],
-  "mode": "MOCK"
+  ]
 }
 ```
 
@@ -413,9 +411,9 @@ Response:
 
 ---
 
-## 12. Demo User Personalization
+## 12. Single User Personalization
 
-모든 `/api/v1/me` API는 인증 없이 고정된 Demo User(`id=1`)를 사용한다.
+모든 `/api/v1/me` API는 인증 없는 single-user mode에서 고정 사용자(`id=1`)를 사용한다.
 
 ### `GET /api/v1/me/wishlist`
 
@@ -425,8 +423,8 @@ Response `200`:
 {
   "items": [
     {
-      "productId": "demo_perfume_001",
-      "sku": "DEMO-DIPTYQUE-PAPIER-100",
+      "productId": "diptyque_leau_papier_100_001",
+      "sku": "DIPTYQUE-PAPIER-100",
       "brand": "Diptyque",
       "name": "로 파피에 오 드 뚜왈렛 100ml",
       "category": "perfume",
@@ -533,7 +531,7 @@ Request:
 }
 ```
 
-Response `200`: 변경된 Purchase response. 존재하지 않거나 Demo User 소유가 아니면
+Response `200`: 변경된 Purchase response. 존재하지 않거나 single user 소유가 아니면
 `404 PURCHASE_NOT_FOUND`를 반환한다.
 
 ### `POST /api/v1/me/flights/analyze`
@@ -576,7 +574,7 @@ Request 예시:
 }
 ```
 
-Response `200`: 수정된 Flight DTO. 존재하지 않거나 Demo User 소유가 아니면
+Response `200`: 수정된 Flight DTO. 존재하지 않거나 single user 소유가 아니면
 `404 FLIGHT_NOT_FOUND`를 반환한다.
 
 ### `GET /api/v1/me/recommendations`
@@ -601,8 +599,8 @@ Response `200`:
       "products": [
         {
           "product": {
-            "productId": "demo_perfume_001",
-            "sku": "DEMO-DIPTYQUE-PAPIER-100",
+            "productId": "diptyque_leau_papier_100_001",
+            "sku": "DIPTYQUE-PAPIER-100",
             "brand": "Diptyque",
             "name": "로 파피에 오 드 뚜왈렛 100ml",
             "category": "perfume",
@@ -626,7 +624,7 @@ Response `200`:
 
 ```json
 {
-  "user": {"id": 1, "name": "Demo User"},
+  "user": {"id": 1, "name": "Single User"},
   "wishlist": [],
   "purchasedProducts": [
     {
@@ -651,7 +649,7 @@ Document/Recommendation OpenAI timeout, API failure, structured response validat
 
 ## 13. B6 Trip Shopping
 
-모든 B6 API는 인증 없이 Demo User(`id=1`) 소유 데이터만 다룬다. 기존 B5 endpoint와
+모든 B6 API는 인증 없이 single user(`id=1`) 소유 데이터만 다룬다. 기존 B5 endpoint와
 response field는 유지한다.
 
 ### Trip
@@ -684,7 +682,7 @@ Trip 생성/수정 body는 `title`, `destinationCity`, `destinationCountry`, `st
 }
 ```
 
-존재하지 않거나 Demo User 소유가 아닌 Trip은 `404 TRIP_NOT_FOUND`다.
+존재하지 않거나 single user 소유가 아닌 Trip은 `404 TRIP_NOT_FOUND`다.
 
 ### Flight 연결
 
@@ -714,10 +712,10 @@ context에 포함한다. 둘 중 하나만 전달하거나 좌표 범위를 벗�
   "recommendations": [
     {
       "product": {
-        "productId": "demo_bag_001",
-        "sku": "DEMO-BAG-001",
-        "brand": "Demo Luxury",
-        "name": "Demo Bag",
+        "productId": "mcm_aren_lambskin_shoulder_s_001",
+        "sku": "MWSGSTA05BW001",
+        "brand": "MCM",
+        "name": "Aren 양가죽 숄더백",
         "category": "bag",
         "imageUrl": "https://example.com/bag.jpg"
       },
@@ -749,7 +747,7 @@ allowlist 검증한다. 이때 Store 후보는 활성 Store만 사용한다.
 
 ### Store Wishlist Intersection
 
-`GET /api/v1/me/stores/{storeId}/wishlist-products`는 Demo User Wishlist와 StoreProduct의
+`GET /api/v1/me/stores/{storeId}/wishlist-products`는 single user Wishlist와 StoreProduct의
 교집합을 `[{"productId": "...", "name": "..."}]`로 반환한다. 비활성 Store는 새 선택 후보로
 취급하지 않고 `404 STORE_NOT_FOUND`를 반환한다.
 
@@ -762,7 +760,7 @@ DELETE /api/v1/me/visit-reservations/{reservationId}
 ```
 
 POST body는 `storeId`, timezone-aware `scheduledAt`, `productIds`를 받는다. `productIds`는 빈
-배열을 허용한다. 각 product는 Demo User Wishlist와 해당 Store의 StoreProduct에 모두 있어야
+배열을 허용한다. 각 product는 single user Wishlist와 해당 Store의 StoreProduct에 모두 있어야
 하며, 아니면 `400 INVALID_RESERVATION_PRODUCTS`다. 존재하지 않거나 비활성인 Store로 새
 예약을 생성하면 `404 STORE_NOT_FOUND`다. DELETE는 row를 지우지 않고 status를
 `CANCELLED`로 전환한 뒤 `204`를 반환한다.
@@ -771,7 +769,7 @@ POST body는 `storeId`, timezone-aware `scheduledAt`, `productIds`를 받는다.
 {
   "id": "uuid",
   "tripId": "uuid",
-  "store": {"storeId": "uuid", "name": "Demo Store", "imageUrl": null},
+  "store": {"storeId": "uuid", "name": "MCM 현대면세점 인천공항 T1", "imageUrl": null},
   "scheduledAt": "2026-08-21T06:00:00Z",
   "products": [],
   "status": "RESERVED",
@@ -792,7 +790,7 @@ POST body는 `storeId`, timezone-aware `scheduledAt`, `productIds`를 받는다.
 
 ### `GET /api/v1/me/trips/{tripId}/refund-checklist`
 
-Demo User 소유 Trip에 연결된 Purchase와 해당 Trip의 최신 Flight를 사용하여 고정 규칙으로
+single user 소유 Trip에 연결된 Purchase와 해당 Trip의 최신 Flight를 사용하여 고정 규칙으로
 생성한다. OpenAI/LLM/RAG는 사용하지 않으며 체크 완료 여부는 Android local UI state로
 관리한다.
 
@@ -849,4 +847,4 @@ Response `200`:
   즉시환급 누적 거래가액 `<= 5,000,000`을 사용한다. 이 계산은 실제 `refundMethod`를
   변경하지 않으며 법적 확정 판정이 아니다.
 
-존재하지 않거나 Demo User 소유가 아닌 Trip은 `404 TRIP_NOT_FOUND`를 반환한다.
+존재하지 않거나 single user 소유가 아닌 Trip은 `404 TRIP_NOT_FOUND`를 반환한다.

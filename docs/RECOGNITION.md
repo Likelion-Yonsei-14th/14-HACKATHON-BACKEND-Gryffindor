@@ -19,19 +19,21 @@ Crop
 → product_id
 ```
 
-## 2. 기존 방식에서 변경된 점
+## 2. 현재 인식 경로
 
-사용하지 않는다.
+기본 Provider는 OpenCLIP이다.
 
-- OpenCLIP
-- local image embedding
-- pgvector
-- cosine similarity threshold
-- GPU / MPS / Torch runtime
+```text
+crop image
+→ OpenCLIP embedding
+→ recognitionEnabled 상품 ID 범위에서 pgvector 검색
+→ similarity / margin threshold
+→ MATCHED 또는 UNKNOWN
+```
 
-OpenAI의 image input을 사용하는 모델 호출로 교체한다.
+OpenAI Provider는 환경 변수로 선택할 수 있으며 동일한 Recognition DTO를 사용한다.
 
-## 3. MVP Recognition Strategy
+## 3. OpenAI Recognition Strategy
 
 MVP는 상품 수가 적은 curated catalog를 전제로 한다.
 
@@ -98,20 +100,21 @@ class RecognitionProvider(Protocol):
 구현:
 
 ```text
-MockRecognitionProvider
+ScriptedRecognitionProvider
+OpenCLIPRecognitionProvider
 OpenAIRecognitionProvider
 ```
 
-## 7. Mock Mode
+## 7. Scripted Mode
 
-UI/Backend 병렬 작업을 위해 Mock Provider를 반드시 제공한다.
+UI/Backend 병렬 작업을 위해 Scripted Provider를 반드시 제공한다.
 
 권장 방식:
 
 - request form의 debug header 또는 fixture filename으로 deterministic product를 반환
 - production 환경에서 debug override 비활성화
 
-Mock 결과도 실제 Provider와 동일한 `RecognitionDecision` DTO를 사용한다.
+Scripted 결과도 실제 Provider와 동일한 `RecognitionDecision` DTO를 사용한다.
 
 ## 8. API 호출 정책
 
@@ -136,17 +139,32 @@ Backend에서 허용할 최소 validation:
 ```text
 OPENAI_API_KEY=
 OPENAI_VISION_MODEL=
-RECOGNITION_PROVIDER=mock|openai
+RECOGNITION_PROVIDER=scripted|openclip|openai
 RECOGNITION_MAX_IMAGE_BYTES=
 RECOGNITION_MAX_CANDIDATES=
 ```
 
 ## 11. 완료 기준
 
-- Mock Provider로 API contract 검증 가능
+- Scripted Provider로 API contract 검증 가능
 - 실제 상품 crop을 보내 OpenAI Provider가 Catalog의 product_id를 반환
 - 로컬 reference fixture와 별도 촬영 query로 `MATCHED` 검증
 - Catalog 밖 이미지에서 UNKNOWN 처리 가능
+
+## 12. Recognition 상품 추가
+
+1. `data/products.seed.json`에 상품을 추가하고 metadata의 `recognitionEnabled`를 `true`로 둔다.
+2. `data/recognition_refs/<productId>/`에 `.jpg`, `.jpeg`, `.png` reference 이미지를 추가한다.
+3. `RECOGNITION_MAX_CANDIDATES`가 전체 recognition 상품 수 이상인지 확인한다.
+4. 상품 seed와 embedding index를 순서대로 실행한다.
+
+```bash
+.venv/bin/python -m app.scripts.seed_products
+.venv/bin/python -m app.scripts.index_product_embeddings
+```
+
+`storeIds: []`는 Store inventory에서만 분리하며 recognition 후보에서는 제외하지 않는다.
+실물과 가까운 조명·각도의 reference를 여러 장 넣고 다시 색인하면 인식 안정성이 좋아진다.
 - 유사 상품 두 개를 구분하지 못할 때 AMBIGUOUS 처리 가능
 - product_id가 DB에 존재하는지 서버 재검증
 - 일반 테스트는 OpenAI 호출 없이 통과

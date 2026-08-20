@@ -1,4 +1,4 @@
-"""Add demo-user personalization, document extraction, and store catalog relations.
+"""Add single-user personalization, document extraction, and store catalog relations.
 
 Revision ID: 20260819_0007
 Revises: 20260817_0006
@@ -26,7 +26,7 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.bulk_insert(users_table, [{"id": 1, "name": "Demo User"}])
+    op.bulk_insert(users_table, [{"id": 1, "name": "Single User"}])
 
     op.add_column(
         "shopping_sessions",

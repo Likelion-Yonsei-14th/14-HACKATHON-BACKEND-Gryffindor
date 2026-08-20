@@ -1,4 +1,4 @@
-"""Create mock vertical slice tables.
+"""Create the initial vertical slice tables.
 
 Revision ID: 20260815_0002
 Revises: 20260815_0001

@@ -11,57 +11,18 @@ Covers:
 
 from datetime import UTC, datetime
 from decimal import Decimal
-from io import BytesIO
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
-from PIL import Image
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.constants import DEMO_USER_ID
+from app.constants import SINGLE_USER_ID
 from app.domain.enums import PurchaseState, TriggerType
 from app.models.personalization import Receipt, ReceiptItem, WishlistItem
 from app.models.product import Product
 from app.models.shopping import SessionProduct, ShoppingSession
 from app.models.store import Store
-
-
-def _get_store_id(client: TestClient) -> str:
-    response = client.get("/api/v1/stores")
-    assert response.status_code == 200
-    return str(response.json()["stores"][0]["id"])
-
-
-def _create_session(client: TestClient) -> str:
-    response = client.post(
-        "/api/v1/sessions",
-        json={"currency": "USD", "storeId": _get_store_id(client)},
-    )
-    assert response.status_code == 201
-    return str(response.json()["sessionId"])
-
-
-def _jpeg_bytes() -> bytes:
-    buffer = BytesIO()
-    Image.new("RGB", (2, 2), color="white").save(buffer, format="JPEG")
-    return buffer.getvalue()
-
-
-def _recognize(client: TestClient, session_id: str) -> None:
-    """Trigger a recognition to create a SessionProduct via mock provider."""
-    response = client.post(
-        f"/api/v1/sessions/{session_id}/recognize",
-        files={"image": ("crop.jpg", _jpeg_bytes(), "image/jpeg")},
-        data={
-            "capturedAt": "2026-08-15T13:35:00Z",
-            "triggerType": "OCCUPANCY_AND_DWELL",
-            "occupancyRatio": "0.24",
-            "dwellMs": "1500",
-        },
-    )
-    assert response.status_code == 200
-    assert response.json()["recognitionStatus"] == "MATCHED"
 
 
 def _seed_multi_product_session(db_session: Session) -> tuple[str, list[str]]:
@@ -73,14 +34,14 @@ def _seed_multi_product_session(db_session: Session) -> tuple[str, list[str]]:
     assert len(products) >= 3
 
     shopping_session = ShoppingSession(
-        user_id=DEMO_USER_ID,
+        user_id=SINGLE_USER_ID,
         store_id=store.id,
         currency="USD",
     )
     db_session.add(shopping_session)
     db_session.flush()
 
-    product_ids = []
+    product_ids: list[str] = []
     for product in products:
         sp = SessionProduct(
             session_id=shopping_session.id,
@@ -123,9 +84,7 @@ def test_review_saves_purchase_and_interest_states(
     # Verify DB state
     session_products = list(
         db_session.scalars(
-            select(SessionProduct).where(
-                SessionProduct.session_id == UUID(session_id)
-            )
+            select(SessionProduct).where(SessionProduct.session_id == UUID(session_id))
         ).all()
     )
     sp_map = {sp.product.product_id: sp for sp in session_products}
@@ -241,9 +200,7 @@ def test_review_purchased_appears_in_my_page(
     assert my_page.status_code == 200
     purchased_products = my_page.json()["purchasedProducts"]
     purchased_product_ids = [
-        item["product"]["productId"]
-        for item in purchased_products
-        if item["product"] is not None
+        item["product"]["productId"] for item in purchased_products if item["product"] is not None
     ]
     assert product_ids[0] in purchased_product_ids
 
@@ -256,12 +213,10 @@ def test_review_purchased_dedup_with_receipt(
     session_id, product_ids = _seed_multi_product_session(db_session)
 
     # Create a receipt with product_ids[0]
-    product = db_session.scalar(
-        select(Product).where(Product.product_id == product_ids[0])
-    )
+    product = db_session.scalar(select(Product).where(Product.product_id == product_ids[0]))
     assert product is not None
     receipt = Receipt(
-        user_id=DEMO_USER_ID,
+        user_id=SINGLE_USER_ID,
         store_name="Test Store",
         purchased_at=datetime(2026, 8, 19, tzinfo=UTC),
         total_amount=product.retail_price_krw,
@@ -295,8 +250,7 @@ def test_review_purchased_dedup_with_receipt(
     matching = [
         item
         for item in purchased_products
-        if item["product"] is not None
-        and item["product"]["productId"] == product_ids[0]
+        if item["product"] is not None and item["product"]["productId"] == product_ids[0]
     ]
     # Should be exactly 1 (from receipt, quantity=2)
     assert len(matching) == 1
@@ -324,7 +278,7 @@ def test_review_mutual_exclusivity_purchased_wins(
     assert product_ids[0] not in body["interestedProductIds"]
 
 
-def test_review_with_mock_recognition_flow(
+def test_review_with_scripted_recognition_flow(
     client: TestClient,
     db_session: Session,
 ) -> None:

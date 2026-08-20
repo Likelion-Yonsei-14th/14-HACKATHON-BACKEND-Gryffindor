@@ -20,7 +20,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.constants import DEMO_USER_ID
+from app.constants import SINGLE_USER_ID
 from app.db.base import Base
 from app.domain.enums import PurchaseState, SessionStatus, TriggerType
 from app.models.common import utc_now
@@ -42,8 +42,8 @@ class ShoppingSession(Base):
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
-        default=DEMO_USER_ID,
-        server_default=str(DEMO_USER_ID),
+        default=SINGLE_USER_ID,
+        server_default=str(SINGLE_USER_ID),
     )
     status: Mapped[SessionStatus] = mapped_column(
         Enum(SessionStatus, name="session_status"),

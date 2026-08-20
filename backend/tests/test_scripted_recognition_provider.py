@@ -1,10 +1,10 @@
 import pytest
 
 from app.domain.enums import RecognitionStatus
-from app.providers.mock_recognition import (
-    MockRecognitionProvider,
-    MockRecognitionProviderError,
-    RecognitionCandidate,
+from app.providers.recognition import RecognitionCandidate
+from app.providers.scripted_recognition import (
+    ScriptedRecognitionProvider,
+    ScriptedRecognitionProviderError,
 )
 
 
@@ -17,10 +17,10 @@ def candidates() -> list[RecognitionCandidate]:
 
 
 @pytest.mark.anyio
-async def test_mock_provider_returns_configured_match(
+async def test_scripted_provider_returns_configured_match(
     candidates: list[RecognitionCandidate],
 ) -> None:
-    provider = MockRecognitionProvider(product_id="catalog_002")
+    provider = ScriptedRecognitionProvider(product_id="catalog_002")
 
     decision = await provider.recognize(b"image", candidates)
 
@@ -29,10 +29,10 @@ async def test_mock_provider_returns_configured_match(
 
 
 @pytest.mark.anyio
-async def test_mock_provider_returns_ambiguous_candidates(
+async def test_scripted_provider_returns_ambiguous_candidates(
     candidates: list[RecognitionCandidate],
 ) -> None:
-    provider = MockRecognitionProvider(status=RecognitionStatus.AMBIGUOUS)
+    provider = ScriptedRecognitionProvider(status=RecognitionStatus.AMBIGUOUS)
 
     decision = await provider.recognize(b"image", candidates)
 
@@ -41,8 +41,10 @@ async def test_mock_provider_returns_ambiguous_candidates(
 
 
 @pytest.mark.anyio
-async def test_mock_provider_returns_unknown(candidates: list[RecognitionCandidate]) -> None:
-    provider = MockRecognitionProvider(status=RecognitionStatus.UNKNOWN)
+async def test_scripted_provider_returns_unknown(
+    candidates: list[RecognitionCandidate],
+) -> None:
+    provider = ScriptedRecognitionProvider(status=RecognitionStatus.UNKNOWN)
 
     decision = await provider.recognize(b"image", candidates)
 
@@ -51,10 +53,10 @@ async def test_mock_provider_returns_unknown(candidates: list[RecognitionCandida
 
 
 @pytest.mark.anyio
-async def test_mock_provider_can_simulate_failure(
+async def test_scripted_provider_can_report_failure(
     candidates: list[RecognitionCandidate],
 ) -> None:
-    provider = MockRecognitionProvider(should_fail=True)
+    provider = ScriptedRecognitionProvider(should_fail=True)
 
-    with pytest.raises(MockRecognitionProviderError):
+    with pytest.raises(ScriptedRecognitionProviderError):
         await provider.recognize(b"image", candidates)

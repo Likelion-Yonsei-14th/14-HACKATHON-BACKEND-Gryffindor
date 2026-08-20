@@ -1,1 +1,1 @@
-"""Replaceable external and mock providers."""
+"""Replaceable recognition and external-service providers."""

@@ -5,7 +5,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.constants import DEMO_USER_ID
+from app.constants import SINGLE_USER_ID
 from app.domain.enums import RefundChecklistStatus, RefundMethod
 from app.errors import AppError
 from app.models.personalization import Receipt
@@ -78,11 +78,11 @@ class RefundChecklistService:
         self._trips = TripRepository(db)
 
     def build(self, trip_id: UUID) -> RefundChecklistResult:
-        if self._trips.get(DEMO_USER_ID, trip_id) is None:
+        if self._trips.get(SINGLE_USER_ID, trip_id) is None:
             raise AppError(404, "TRIP_NOT_FOUND", "Trip was not found.")
 
-        purchases = self._personalization.list_trip_receipts(DEMO_USER_ID, trip_id)
-        session_purchases = self._personalization.list_session_purchased_products(DEMO_USER_ID)
+        purchases = self._personalization.list_trip_receipts(SINGLE_USER_ID, trip_id)
+        session_purchases = self._personalization.list_session_purchased_products(SINGLE_USER_ID)
         potential_eligibility = self._potential_immediate_eligibility(purchases)
 
         if not purchases and not session_purchases:
@@ -93,16 +93,15 @@ class RefundChecklistService:
                 potential_immediate_eligibility=potential_eligibility,
             )
 
-        latest_flight = self._personalization.latest_trip_flight(DEMO_USER_ID, trip_id)
+        latest_flight = self._personalization.latest_trip_flight(SINGLE_USER_ID, trip_id)
         departure_at = latest_flight.departure_at if latest_flight is not None else None
         has_deadline_warning = any(
-            _exceeds_export_deadline(purchase.purchased_at, departure_at)
-            for purchase in purchases
+            _exceeds_export_deadline(purchase.purchased_at, departure_at) for purchase in purchases
         )
 
         methods = {purchase.refund_method for purchase in purchases}
         if session_purchases:
-            # Review purchases have no receipt/refund-method relation in the demo schema.
+            # Review purchases have no receipt/refund-method relation in the current schema.
             # Treat them as an active-trip purchase whose refund method is not yet known.
             methods.add(RefundMethod.UNKNOWN)
         if methods == {RefundMethod.IMMEDIATE}:

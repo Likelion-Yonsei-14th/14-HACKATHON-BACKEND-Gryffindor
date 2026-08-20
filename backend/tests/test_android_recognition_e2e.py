@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.api.sessions import get_recognition_provider
 from app.domain.enums import RecognitionStatus
 from app.models.shopping import SessionProduct
-from app.providers.mock_recognition import MockRecognitionProvider
+from app.providers.scripted_recognition import ScriptedRecognitionProvider
 
 
 def _create_session(client: TestClient) -> str:
@@ -59,9 +59,10 @@ def _recognize_from_android(
     )
 
 
-def _use_mock_status(test_app: FastAPI, recognition_status: RecognitionStatus) -> None:
-    test_app.dependency_overrides[get_recognition_provider] = lambda: MockRecognitionProvider(
-        status=recognition_status
+def _use_scripted_status(test_app: FastAPI, recognition_status: RecognitionStatus) -> None:
+    test_app.dependency_overrides[get_recognition_provider] = lambda: ScriptedRecognitionProvider(
+        status=recognition_status,
+        product_id="diptyque_leau_papier_100_001",
     )
 
 
@@ -76,7 +77,7 @@ def test_android_matched_request_and_duplicate_upsert(
     test_app: FastAPI,
     db_session: Session,
 ) -> None:
-    _use_mock_status(test_app, RecognitionStatus.MATCHED)
+    _use_scripted_status(test_app, RecognitionStatus.MATCHED)
     session_id = _create_session(client)
 
     first_response = _recognize_from_android(client, session_id)
@@ -86,7 +87,7 @@ def test_android_matched_request_and_duplicate_upsert(
     assert first_body["recognitionStatus"] == "MATCHED"
     assert first_body["isNew"] is True
     observed_product = first_body["observedProduct"]
-    assert observed_product["product"]["productId"] == "demo_lotion_001"
+    assert observed_product["product"]["productId"] == "diptyque_leau_papier_100_001"
     assert observed_product["pricing"]
     assert observed_product["observation"] == {
         "triggerType": "OCCUPANCY_AND_DWELL",
@@ -112,7 +113,7 @@ def test_android_request_has_correlated_recognition_log(
     test_app: FastAPI,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    _use_mock_status(test_app, RecognitionStatus.MATCHED)
+    _use_scripted_status(test_app, RecognitionStatus.MATCHED)
     session_id = _create_session(client)
     request_id = "android-e2e-request-001"
 
@@ -132,12 +133,12 @@ def test_android_request_has_correlated_recognition_log(
         f"request_id={request_id}",
         f"session_id={session_id}",
         f"image_bytes={len(_android_jpeg_crop())}",
-        "provider=MockRecognitionProvider",
+        "provider=ScriptedRecognitionProvider",
         "trigger_type=OCCUPANCY_AND_DWELL",
         "occupancy_ratio=0.2400",
         "dwell_ms=1500",
         "recognition_status=MATCHED",
-        "product_id=demo_lotion_001",
+        "product_id=diptyque_leau_papier_100_001",
         "recognition_latency_ms=",
         "total_latency_ms=",
     ]
@@ -149,7 +150,7 @@ def test_android_unknown_request_does_not_store_session_product(
     test_app: FastAPI,
     db_session: Session,
 ) -> None:
-    _use_mock_status(test_app, RecognitionStatus.UNKNOWN)
+    _use_scripted_status(test_app, RecognitionStatus.UNKNOWN)
     session_id = _create_session(client)
 
     response = _recognize_from_android(client, session_id)
@@ -164,7 +165,7 @@ def test_android_ambiguous_request_returns_candidates_without_storage(
     test_app: FastAPI,
     db_session: Session,
 ) -> None:
-    _use_mock_status(test_app, RecognitionStatus.AMBIGUOUS)
+    _use_scripted_status(test_app, RecognitionStatus.AMBIGUOUS)
     session_id = _create_session(client)
 
     response = _recognize_from_android(client, session_id)
@@ -172,6 +173,9 @@ def test_android_ambiguous_request_returns_candidates_without_storage(
     assert response.status_code == 200
     assert response.json() == {
         "recognitionStatus": "AMBIGUOUS",
-        "candidateProductIds": ["demo_lotion_001", "demo_mouse_001"],
+        "candidateProductIds": [
+            "anillo_fragrance_of_life_10_001",
+            "dashu_aqua_dive_50_001",
+        ],
     }
     assert _session_product_count(db_session) == 0

@@ -102,7 +102,7 @@ class PriceQuoteResponse(ApiModel):
     converted_amount: Decimal | None
     converted_currency: str
     instant_refund_eligible: bool
-    pricing_mode: Literal["MOCK"] = "MOCK"
+    pricing_mode: Literal["ESTIMATED"] = "ESTIMATED"
 
 
 class ObservationResponse(ApiModel):

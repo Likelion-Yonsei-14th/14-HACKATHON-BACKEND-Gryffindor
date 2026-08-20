@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.me import get_document_extraction_provider
-from app.constants import DEMO_USER_ID
+from app.constants import SINGLE_USER_ID
 from app.domain.enums import PurchaseState, RefundMethod, TriggerType
 from app.models.personalization import Flight, Receipt, ReceiptItem
 from app.models.product import Product
@@ -30,7 +30,7 @@ def _jpeg_bytes() -> bytes:
     return buffer.getvalue()
 
 
-class FakeReceiptProvider:
+class ScriptedReceiptProvider:
     def __init__(self, receipt: ReceiptExtraction) -> None:
         self.receipt = receipt
 
@@ -67,10 +67,10 @@ def _add_purchase(
 ) -> Receipt:
     product = _product(db, product_id)
     purchase = Receipt(
-        user_id=DEMO_USER_ID,
+        user_id=SINGLE_USER_ID,
         trip_id=trip_id,
         refund_method=refund_method,
-        store_name="Demo Store",
+        store_name="Reference Store",
         purchased_at=purchased_at,
         total_amount=total_amount,
         currency=currency,
@@ -99,7 +99,7 @@ def _add_session_product(
     store = db.scalar(select(Store).where(Store.is_active.is_(True)).limit(1))
     assert store is not None
     shopping_session = ShoppingSession(
-        user_id=DEMO_USER_ID,
+        user_id=SINGLE_USER_ID,
         store_id=store.id,
         currency="KRW",
     )
@@ -166,10 +166,7 @@ def test_session_purchased_with_unsupported_refund_metadata_returns_default_chec
         "customs-export-confirmation",
         "receive-refund",
     ]
-    assert all(
-        set(item) == {"id", "title", "description", "required"}
-        for item in payload["items"]
-    )
+    assert all(set(item) == {"id", "title", "description", "required"} for item in payload["items"])
 
 
 def test_session_purchased_without_receipt_returns_items(
@@ -220,7 +217,7 @@ def test_receipt_purchase_without_refund_supported_product_returns_items(
         product_id="diptyque_leau_papier_100_001",
     )
     fallback_purchase = Receipt(
-        user_id=DEMO_USER_ID,
+        user_id=SINGLE_USER_ID,
         trip_id=trip_id,
         refund_method=RefundMethod.UNKNOWN,
         store_name="Fallback Store",
@@ -385,7 +382,7 @@ def test_departure_after_three_calendar_months_adds_one_warning(
     )
     db_session.add(
         Flight(
-            user_id=DEMO_USER_ID,
+            user_id=SINGLE_USER_ID,
             trip_id=trip_id,
             departure_at=datetime(2026, 5, 1, 10, tzinfo=UTC),
         )
@@ -409,7 +406,7 @@ def test_missing_purchase_and_departure_dates_do_not_add_warning_or_crash(
         refund_method=RefundMethod.UNKNOWN,
         purchased_at=None,
     )
-    db_session.add(Flight(user_id=DEMO_USER_ID, trip_id=trip_id, departure_at=None))
+    db_session.add(Flight(user_id=SINGLE_USER_ID, trip_id=trip_id, departure_at=None))
     db_session.commit()
 
     payload = _checklist(client, trip_id)
@@ -423,15 +420,15 @@ def test_receipt_analyze_optional_trip_and_purchase_refund_method_patch(
     test_app: FastAPI,
 ) -> None:
     trip_id = _create_trip(client)
-    provider = FakeReceiptProvider(
+    provider = ScriptedReceiptProvider(
         ReceiptExtraction(
-            store_name="Demo Store",
+            store_name="Reference Store",
             purchased_at=datetime(2026, 8, 19, tzinfo=UTC),
             currency="KRW",
             total_amount=25_000,
             items=[
                 ReceiptItemExtraction(
-                    name="Demo Mouse",
+                    name="Reference Product",
                     quantity=1,
                     price=25_000,
                 )

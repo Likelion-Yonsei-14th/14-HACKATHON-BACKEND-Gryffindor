@@ -17,7 +17,7 @@ from app.services.exchange_rates import (
 )
 
 
-class FakeExchangeRateProvider:
+class ScriptedExchangeRateProvider:
     def __init__(
         self,
         responses: list[tuple[FetchedExchangeRate, FetchedExchangeRate]] | None = None,
@@ -64,7 +64,7 @@ def test_service_persists_both_rates_and_skips_repeat_check_today(
     db_session: Session,
 ) -> None:
     checked_at = datetime(2026, 8, 17, 1, 30, tzinfo=UTC)
-    provider = FakeExchangeRateProvider([_pair(rate_date=date(2026, 8, 17))])
+    provider = ScriptedExchangeRateProvider([_pair(rate_date=date(2026, 8, 17))])
     service = ExchangeRateService(db_session, provider, now=lambda: checked_at)
 
     first_rates = service.get_rates()
@@ -82,7 +82,7 @@ def test_service_persists_both_rates_and_skips_repeat_check_today(
 def test_old_rate_date_does_not_repeat_check_on_weekend(db_session: Session) -> None:
     sunday = datetime(2026, 8, 16, 3, 0, tzinfo=UTC)
     friday = date(2026, 8, 14)
-    provider = FakeExchangeRateProvider([_pair(rate_date=friday)])
+    provider = ScriptedExchangeRateProvider([_pair(rate_date=friday)])
     service = ExchangeRateService(db_session, provider, now=lambda: sunday)
 
     first_rates = service.get_rates()
@@ -96,7 +96,7 @@ def test_old_rate_date_does_not_repeat_check_on_weekend(db_session: Session) -> 
 
 def test_service_refreshes_on_first_use_next_day(db_session: Session) -> None:
     current_time = [datetime(2026, 8, 17, 1, 0, tzinfo=UTC)]
-    provider = FakeExchangeRateProvider(
+    provider = ScriptedExchangeRateProvider(
         [
             _pair(rate_date=date(2026, 8, 17)),
             _pair(rate_date=date(2026, 8, 18), usd="0.00072", cny="0.00477"),
@@ -118,11 +118,11 @@ def test_provider_failure_uses_cache_and_marks_today_checked(db_session: Session
     first_day = datetime(2026, 8, 17, 1, 0, tzinfo=UTC)
     ExchangeRateService(
         db_session,
-        FakeExchangeRateProvider([_pair(rate_date=first_day.date())]),
+        ScriptedExchangeRateProvider([_pair(rate_date=first_day.date())]),
         now=lambda: first_day,
     ).get_rates()
     next_day = datetime(2026, 8, 18, 2, 0, tzinfo=UTC)
-    unavailable_provider = FakeExchangeRateProvider(unavailable=True)
+    unavailable_provider = ScriptedExchangeRateProvider(unavailable=True)
     service = ExchangeRateService(
         db_session,
         unavailable_provider,
@@ -140,7 +140,7 @@ def test_provider_failure_uses_cache_and_marks_today_checked(db_session: Session
 def test_provider_failure_without_cache_is_unavailable(db_session: Session) -> None:
     service = ExchangeRateService(
         db_session,
-        FakeExchangeRateProvider(unavailable=True),
+        ScriptedExchangeRateProvider(unavailable=True),
         now=lambda: datetime(2026, 8, 17, tzinfo=UTC),
     )
 
@@ -152,7 +152,7 @@ def test_provider_retries_same_day_after_initial_failure_without_cache(
     db_session: Session,
 ) -> None:
     checked_at = datetime(2026, 8, 17, 1, 0, tzinfo=UTC)
-    provider = FakeExchangeRateProvider(unavailable=True)
+    provider = ScriptedExchangeRateProvider(unavailable=True)
     service = ExchangeRateService(db_session, provider, now=lambda: checked_at)
 
     with pytest.raises(ExchangeRateUnavailableError):
@@ -171,7 +171,7 @@ def test_provider_retries_same_day_after_initial_failure_without_cache(
 
 
 def test_service_rejects_unsupported_currency_before_fetch(db_session: Session) -> None:
-    provider = FakeExchangeRateProvider([_pair(rate_date=date(2026, 8, 17))])
+    provider = ScriptedExchangeRateProvider([_pair(rate_date=date(2026, 8, 17))])
     service = ExchangeRateService(db_session, provider)
 
     with pytest.raises(UnsupportedCurrencyError):
@@ -184,7 +184,7 @@ def test_cached_rate_does_not_call_provider_or_refresh_stale_cache(
     db_session: Session,
 ) -> None:
     cached_at = datetime(2026, 8, 16, tzinfo=UTC)
-    provider = FakeExchangeRateProvider([_pair(rate_date=date(2026, 8, 17))])
+    provider = ScriptedExchangeRateProvider([_pair(rate_date=date(2026, 8, 17))])
     db_session.add(
         CurrencyRate(
             base_currency="KRW",

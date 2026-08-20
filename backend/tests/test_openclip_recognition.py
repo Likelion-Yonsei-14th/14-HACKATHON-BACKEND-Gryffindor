@@ -9,7 +9,7 @@ from app.repositories.product_embeddings import ProductEmbeddingMatch
 
 
 @dataclass
-class FakeEmbedder:
+class StaticEmbedder:
     embedding: list[float]
 
     async def embed(self, image_bytes: bytes) -> list[float]:
@@ -17,7 +17,7 @@ class FakeEmbedder:
         return self.embedding
 
 
-class FakeSearcher:
+class StaticSearcher:
     def __init__(self, matches: list[ProductEmbeddingMatch]) -> None:
         self.matches = matches
         self.calls: list[dict[str, object]] = []
@@ -39,7 +39,7 @@ class FakeSearcher:
         return self.matches
 
 
-class FakeFallback:
+class RecordingFallbackProvider:
     def __init__(self, decision: RecognitionDecision) -> None:
         self.decision = decision
         self.calls = 0
@@ -56,21 +56,25 @@ class FakeFallback:
 
 def candidates() -> list[RecognitionCandidate]:
     return [
-        RecognitionCandidate("demo_mouse_001", "mouse", "Logitech", "M185", "mouse"),
-        RecognitionCandidate("demo_lotion_001", "lotion", "BRINGGREEN", "Cream", "lotion"),
-        RecognitionCandidate("demo_perfume_001", "perfume", "Diptyque", "Papier", "perfume"),
+        RecognitionCandidate("dashu_aqua_dive_50_001", "mouse", "Logitech", "M185", "mouse"),
+        RecognitionCandidate(
+            "diptyque_leau_papier_100_001", "lotion", "BRINGGREEN", "Cream", "lotion"
+        ),
+        RecognitionCandidate(
+            "anillo_fragrance_of_life_10_001", "perfume", "Diptyque", "Papier", "perfume"
+        ),
     ]
 
 
 @pytest.mark.anyio
 async def test_confident_openclip_match_skips_openai_fallback() -> None:
-    fallback = FakeFallback(RecognitionDecision(status=RecognitionStatus.UNKNOWN))
+    fallback = RecordingFallbackProvider(RecognitionDecision(status=RecognitionStatus.UNKNOWN))
     provider = OpenCLIPRecognitionProvider(
-        embedder=FakeEmbedder([0.1, 0.2]),
-        searcher=FakeSearcher(
+        embedder=StaticEmbedder([0.1, 0.2]),
+        searcher=StaticSearcher(
             [
-                ProductEmbeddingMatch("demo_mouse_001", 0.08),
-                ProductEmbeddingMatch("demo_lotion_001", 0.30),
+                ProductEmbeddingMatch("dashu_aqua_dive_50_001", 0.08),
+                ProductEmbeddingMatch("diptyque_leau_papier_100_001", 0.30),
             ]
         ),
         fallback=fallback,
@@ -81,7 +85,7 @@ async def test_confident_openclip_match_skips_openai_fallback() -> None:
     decision = await provider.recognize(b"query", candidates())
 
     assert decision.status is RecognitionStatus.MATCHED
-    assert decision.product_id == "demo_mouse_001"
+    assert decision.product_id == "dashu_aqua_dive_50_001"
     assert fallback.calls == 0
     assert decision.telemetry is not None
     assert decision.telemetry.provider == "openclip"
@@ -94,18 +98,18 @@ async def test_confident_openclip_match_skips_openai_fallback() -> None:
 
 @pytest.mark.anyio
 async def test_uncertain_openclip_result_uses_openai_fallback() -> None:
-    fallback = FakeFallback(
+    fallback = RecordingFallbackProvider(
         RecognitionDecision(
             status=RecognitionStatus.MATCHED,
-            product_id="demo_mouse_001",
+            product_id="dashu_aqua_dive_50_001",
         )
     )
     provider = OpenCLIPRecognitionProvider(
-        embedder=FakeEmbedder([0.1, 0.2]),
-        searcher=FakeSearcher(
+        embedder=StaticEmbedder([0.1, 0.2]),
+        searcher=StaticSearcher(
             [
-                ProductEmbeddingMatch("demo_mouse_001", 0.18),
-                ProductEmbeddingMatch("demo_lotion_001", 0.20),
+                ProductEmbeddingMatch("dashu_aqua_dive_50_001", 0.18),
+                ProductEmbeddingMatch("diptyque_leau_papier_100_001", 0.20),
             ]
         ),
         fallback=fallback,
@@ -116,7 +120,7 @@ async def test_uncertain_openclip_result_uses_openai_fallback() -> None:
     decision = await provider.recognize(b"query", candidates())
 
     assert decision.status is RecognitionStatus.MATCHED
-    assert decision.product_id == "demo_mouse_001"
+    assert decision.product_id == "dashu_aqua_dive_50_001"
     assert fallback.calls == 1
     assert decision.telemetry is not None
     assert abs((decision.telemetry.top1_similarity or 0) - 0.82) < 1e-9
@@ -129,11 +133,11 @@ async def test_uncertain_openclip_result_uses_openai_fallback() -> None:
 @pytest.mark.anyio
 async def test_uncertain_openclip_result_without_fallback_is_unknown() -> None:
     provider = OpenCLIPRecognitionProvider(
-        embedder=FakeEmbedder([0.1, 0.2]),
-        searcher=FakeSearcher(
+        embedder=StaticEmbedder([0.1, 0.2]),
+        searcher=StaticSearcher(
             [
-                ProductEmbeddingMatch("demo_mouse_001", 0.18),
-                ProductEmbeddingMatch("demo_lotion_001", 0.20),
+                ProductEmbeddingMatch("dashu_aqua_dive_50_001", 0.18),
+                ProductEmbeddingMatch("diptyque_leau_papier_100_001", 0.20),
             ]
         ),
         match_threshold=0.80,
@@ -150,10 +154,10 @@ async def test_uncertain_openclip_result_without_fallback_is_unknown() -> None:
 
 @pytest.mark.anyio
 async def test_missing_top2_is_conservative_and_falls_back() -> None:
-    fallback = FakeFallback(RecognitionDecision(status=RecognitionStatus.UNKNOWN))
+    fallback = RecordingFallbackProvider(RecognitionDecision(status=RecognitionStatus.UNKNOWN))
     provider = OpenCLIPRecognitionProvider(
-        embedder=FakeEmbedder([0.1, 0.2]),
-        searcher=FakeSearcher([ProductEmbeddingMatch("demo_mouse_001", 0.01)]),
+        embedder=StaticEmbedder([0.1, 0.2]),
+        searcher=StaticSearcher([ProductEmbeddingMatch("dashu_aqua_dive_50_001", 0.01)]),
         fallback=fallback,
         match_threshold=0.50,
         margin_threshold=0.01,

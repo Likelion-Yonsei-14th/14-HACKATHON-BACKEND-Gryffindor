@@ -14,11 +14,11 @@ from app.domain.enums import RecognitionStatus, TriggerType
 from app.errors import AppError
 from app.models.product import Product
 from app.models.shopping import SessionProduct
-from app.providers.mock_recognition import MockRecognitionProvider
 from app.providers.openai_recognition import OpenAIRecognitionProvider
 from app.providers.openclip_embedding import OpenCLIPImageEmbedder
 from app.providers.openclip_recognition import OpenCLIPRecognitionProvider
 from app.providers.recognition import RecognitionProvider
+from app.providers.scripted_recognition import ScriptedRecognitionProvider
 from app.repositories.product_embeddings import ProductEmbeddingRepository
 from app.schemas.api import (
     ErrorResponse,
@@ -45,10 +45,10 @@ DbSession = Annotated[Session, Depends(get_db_session)]
 AppSettings = Annotated[Settings, Depends(get_settings)]
 
 
-def get_mock_recognition_provider(settings: AppSettings) -> MockRecognitionProvider:
-    return MockRecognitionProvider(
-        status=RecognitionStatus(settings.mock_recognition_status),
-        product_id=settings.mock_recognition_product_id,
+def get_scripted_recognition_provider(settings: AppSettings) -> ScriptedRecognitionProvider:
+    return ScriptedRecognitionProvider(
+        status=RecognitionStatus(settings.scripted_recognition_status),
+        product_id=settings.scripted_recognition_product_id,
     )
 
 
@@ -56,8 +56,8 @@ async def get_recognition_provider(
     settings: AppSettings,
     db: DbSession,
 ) -> AsyncIterator[RecognitionProvider]:
-    if settings.recognition_provider == "mock":
-        yield get_mock_recognition_provider(settings)
+    if settings.recognition_provider == "scripted":
+        yield get_scripted_recognition_provider(settings)
         return
 
     if settings.recognition_provider == "openclip":

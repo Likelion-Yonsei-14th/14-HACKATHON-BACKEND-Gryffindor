@@ -14,7 +14,7 @@ from app.providers.openai_recognition import (
 from app.providers.recognition import RecognitionCandidate, RecognitionProviderError
 
 
-class FakeResponses:
+class ScriptedResponses:
     def __init__(
         self,
         output: OpenAIRecognitionOutput | None = None,
@@ -31,8 +31,8 @@ class FakeResponses:
         return SimpleNamespace(output_parsed=self.output)
 
 
-class FakeOpenAIClient:
-    def __init__(self, responses: FakeResponses) -> None:
+class RecordingOpenAIClient:
+    def __init__(self, responses: ScriptedResponses) -> None:
         self.responses = responses
 
 
@@ -58,12 +58,12 @@ def candidates() -> list[RecognitionCandidate]:
     ]
 
 
-def provider_with(responses: FakeResponses) -> OpenAIRecognitionProvider:
+def provider_with(responses: ScriptedResponses) -> OpenAIRecognitionProvider:
     return OpenAIRecognitionProvider(
         api_key="test-key",
         model="test-model",
         timeout_seconds=1,
-        client=cast(AsyncOpenAI, FakeOpenAIClient(responses)),
+        client=cast(AsyncOpenAI, RecordingOpenAIClient(responses)),
     )
 
 
@@ -110,9 +110,9 @@ async def test_structured_results_map_to_common_decision(
     expected_product_id: str | None,
     expected_candidates: tuple[str, ...],
 ) -> None:
-    fake_responses = FakeResponses(output=output)
+    scripted_responses = ScriptedResponses(output=output)
 
-    decision = await provider_with(fake_responses).recognize(
+    decision = await provider_with(scripted_responses).recognize(
         b"\xff\xd8\xffimage",
         candidates,
     )
@@ -121,7 +121,7 @@ async def test_structured_results_map_to_common_decision(
     assert decision.product_id == expected_product_id
     assert decision.candidate_product_ids == expected_candidates
 
-    request = fake_responses.calls[0]
+    request = scripted_responses.calls[0]
     assert request["model"] == "test-model"
     assert request["text_format"] is OpenAIRecognitionOutput
     assert request["reasoning"] == {"effort": "none"}
@@ -139,12 +139,12 @@ async def test_structured_results_map_to_common_decision(
 
 @pytest.mark.anyio
 async def test_empty_catalog_returns_unknown_without_openai_call() -> None:
-    fake_responses = FakeResponses()
+    scripted_responses = ScriptedResponses()
 
-    decision = await provider_with(fake_responses).recognize(b"image", [])
+    decision = await provider_with(scripted_responses).recognize(b"image", [])
 
     assert decision.status is RecognitionStatus.UNKNOWN
-    assert fake_responses.calls == []
+    assert scripted_responses.calls == []
 
 
 @pytest.mark.anyio
@@ -152,7 +152,7 @@ async def test_timeout_is_mapped_to_common_provider_error(
     candidates: list[RecognitionCandidate],
 ) -> None:
     timeout = APITimeoutError(request=Request("POST", "https://api.openai.com/v1/responses"))
-    provider = provider_with(FakeResponses(error=timeout))
+    provider = provider_with(ScriptedResponses(error=timeout))
 
     with pytest.raises(RecognitionProviderError):
         await provider.recognize(b"\x89PNG\r\n\x1a\nimage", candidates)
@@ -162,7 +162,7 @@ async def test_timeout_is_mapped_to_common_provider_error(
 async def test_missing_structured_output_is_provider_error(
     candidates: list[RecognitionCandidate],
 ) -> None:
-    provider = provider_with(FakeResponses(output=None))
+    provider = provider_with(ScriptedResponses(output=None))
 
     with pytest.raises(RecognitionProviderError):
         await provider.recognize(b"\xff\xd8\xffimage", candidates)
@@ -175,7 +175,7 @@ async def test_success_logs_openai_latency(
 ) -> None:
     caplog.set_level(logging.INFO, logger="app.providers.openai_recognition")
     provider = provider_with(
-        FakeResponses(
+        ScriptedResponses(
             output=OpenAIRecognitionOutput(
                 status=RecognitionStatus.MATCHED,
                 product_id="catalog_001",

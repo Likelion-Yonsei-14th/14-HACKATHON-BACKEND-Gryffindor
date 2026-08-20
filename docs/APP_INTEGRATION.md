@@ -113,15 +113,15 @@ YUV metadata
 - `UNIQUE(session_id, product_id)`
 - 반복 관찰은 기존 row update
 
-## 7. UI 병렬 작업용 Mock Mode
+## 7. UI 병렬 작업용 Scripted Mode
 
-Backend가 `RECOGNITION_PROVIDER=mock`인 상태에서도 실제 API endpoint를 그대로 사용한다.
+Backend가 `RECOGNITION_PROVIDER=scripted`인 상태에서도 실제 API endpoint를 그대로 사용한다.
 
 따라서 UI 코드는 다음과 같은 분기를 만들지 않는다.
 
 ```text
-if mock:
-   mockResponse()
+if scripted:
+   scriptedResponse()
 else:
    apiCall()
 ```
@@ -195,7 +195,7 @@ API Key는 App config에 존재하지 않는다.
 ## 11. B3 E2E 검증 절차
 
 1. Android에서 `GET /health`를 호출해 `200`과 `{"status":"ok"}`를 확인한다.
-2. `GET /api/v1/stores`를 호출해 demo 매장 목록과 선택한 `storeId`를 얻는다.
+2. `GET /api/v1/stores`를 호출해 catalog 매장 목록과 선택한 `storeId`를 얻는다.
 3. `POST /api/v1/sessions`에 `{"currency":"CNY","storeId":"<선택한 UUID>"}`를
    보내 `201`과 `sessionId`를 받는다.
 4. Android fixture JPEG을 위 multipart 형태로 `/recognize`에 보내 `MATCHED` 응답을
@@ -210,6 +210,6 @@ API Key는 App config에 존재하지 않는다.
 9. 같은 상품을 같은 session에서 다시 인식해 `isNew=false`이며 DB의
    `(session_id, product_id)` row가 하나뿐인지 확인한다.
 
-1~4와 Mock Provider 기반 7~9 상태/중복 검증은 automated test로 수행할 수 있다. 5~6의
+1~4와 Scripted Provider 기반 7~9 상태/중복 검증은 automated test로 수행할 수 있다. 5~6의
 Gen2 촬영과 Android UI 표시, 실제 OpenAI를 사용하는 7~8 결과 품질은 실기기 smoke
 test로 최종 확인한다.

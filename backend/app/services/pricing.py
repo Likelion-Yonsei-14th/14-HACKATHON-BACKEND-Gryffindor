@@ -4,16 +4,18 @@ from decimal import ROUND_HALF_UP, Decimal
 from app.models.product import Product
 from app.services.exchange_rates import ExchangeRateService, ExchangeRateUnavailableError
 
-# Demo refund policy: 7% estimated tax refund for all products.
-_DEMO_REFUND_RATE = Decimal("0.07")
+# Current estimated-refund policy: 7% of the retail price.
+_ESTIMATED_REFUND_RATE = Decimal("0.07")
 
 
-def calculate_demo_refund_krw(price_krw: int) -> int:
-    """Calculate the demo estimated refund amount (7% of retail price, rounded)."""
-    return int((Decimal(price_krw) * _DEMO_REFUND_RATE).quantize(
-        Decimal("1"),
-        rounding=ROUND_HALF_UP,
-    ))
+def calculate_estimated_refund_krw(price_krw: int) -> int:
+    """Calculate the estimated refund amount (7% of retail price, rounded)."""
+    return int(
+        (Decimal(price_krw) * _ESTIMATED_REFUND_RATE).quantize(
+            Decimal("1"),
+            rounding=ROUND_HALF_UP,
+        )
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,11 +40,12 @@ class PricingService:
         self._exchange_rates = exchange_rates
 
     def quote(self, product: Product, currency: str) -> PriceQuote:
-        # Use product's stored refund if non-zero; otherwise apply demo 7% rate.
+        # Use the stored refund if non-zero; otherwise apply the current 7% estimate.
         stored_refund = product.estimated_refund_krw
         estimated_refund_krw = (
-            stored_refund if stored_refund > 0
-            else calculate_demo_refund_krw(product.retail_price_krw)
+            stored_refund
+            if stored_refund > 0
+            else calculate_estimated_refund_krw(product.retail_price_krw)
         )
         estimated_refund_price_krw = product.retail_price_krw - estimated_refund_krw
         try:
@@ -79,7 +82,7 @@ class PricingService:
 
         Used for purchased items where only price is known (e.g. receipt items).
         """
-        estimated_refund_krw = calculate_demo_refund_krw(price_krw)
+        estimated_refund_krw = calculate_estimated_refund_krw(price_krw)
         estimated_refund_price_krw = price_krw - estimated_refund_krw
         try:
             fx_rate = self._exchange_rates.get_cached_rate(currency).rate

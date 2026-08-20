@@ -6,7 +6,6 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.constants import DEMO_USER_ID
 from app.domain.enums import PurchaseState, RecognitionStatus, SessionStatus, TriggerType
 from app.errors import AppError
 from app.models.common import utc_now
@@ -120,9 +119,7 @@ class ShoppingSessionService:
         personalization = PersonalizationRepository(self._db)
         for product_id in interested_set:
             sp = sp_by_product_id[product_id]
-            existing = personalization.get_wishlist_item(
-                shopping_session.user_id, sp.product_id
-            )
+            existing = personalization.get_wishlist_item(shopping_session.user_id, sp.product_id)
             if existing is None:
                 personalization.add_wishlist_item(
                     WishlistItem(
@@ -139,13 +136,11 @@ class ShoppingSessionService:
 
         # Return the final state
         final_purchased = sorted(
-            pid for pid, sp in sp_by_product_id.items()
+            pid
+            for pid, sp in sp_by_product_id.items()
             if sp.purchase_state == PurchaseState.PURCHASED
         )
-        final_interested = sorted(
-            pid for pid, sp in sp_by_product_id.items()
-            if sp.interested
-        )
+        final_interested = sorted(pid for pid, sp in sp_by_product_id.items() if sp.interested)
         return final_purchased, final_interested
 
 
@@ -179,7 +174,7 @@ class RecognitionService:
         products = [
             product
             for product in self._products.list_all()
-            if product.metadata_json.get("recognitionTest") is True
+            if product.metadata_json.get("recognitionEnabled") is True
         ][: self._candidate_limit]
         products_by_product_id = {product.product_id: product for product in products}
         candidates = [

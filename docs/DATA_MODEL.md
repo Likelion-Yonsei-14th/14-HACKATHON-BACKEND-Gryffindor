@@ -35,14 +35,15 @@ products
 - updated_at TIMESTAMPTZ
 ```
 
-`20260817_0006` 적용 시 기존 session row는 demo `MCM Seoul`로 backfill한 뒤
+`20260817_0006` 적용 시 기존 session row는 legacy `MCM Seoul`로 backfill한 뒤
 `store_id`를 `NOT NULL`로 전환한다.
 
 `instant_refund_eligible`를 product의 영구 속성으로 단정하지 않는다. Product Card에서는
 `tax_refund_supported`와 개별 상품 가격 1,000,000원 미만 조건만으로 잠재 가능성을 계산하고,
 Purchase의 실제 거래 총액과 누적 금액은 Refund Checklist에서 별도로 계산한다.
 
-MVP Mock Mode에서는 metadata에 테스트용 조건을 둘 수 있다.
+Recognition 대상은 product metadata의 `recognitionEnabled`로 명시한다. Reference 상품은
+`true`, 현재 인식 대상이 아닌 MCM 운영 Catalog는 `false`를 유지한다.
 
 `price_krw`와 `estimated_refund_krw`는 seed/product 데이터의 미리 계산된 KRW 고정값이다.
 예상 환급 후 가격은 `price_krw - estimated_refund_krw`로 계산하며 중복 저장하지 않는다.
@@ -131,9 +132,9 @@ travel_plans
 - updated_at TIMESTAMPTZ
 ```
 
-## 7. Demo Seed
+## 7. Catalog Seed
 
-Demo 매장은 `data/stores.seed.json`, 시연 상품은 `data/products.seed.json` 형태로
+Catalog 매장은 `data/stores.seed.json`, reference 및 운영 상품은 `data/products.seed.json` 형태로
 관리하고 각각의 seed command로 DB에 입력한다.
 
 Store seed는 브랜드와 실제 지점의 조합마다 하나의 Store를 두며, 현재 백화점 2개와
@@ -179,10 +180,10 @@ airport_code
 
 실제 데이터 소스가 확보되면 `AirportCatalogProvider` 구현만 교체한다.
 
-## 9. B5 Demo User Personalization
+## 9. B5 Single User Personalization
 
-인증은 추가하지 않고 모든 `/me` API와 새 Shopping Session은 고정 Demo User `id=1`을
-사용한다. 기존 Shopping Session은 migration에서 Demo User로 backfill한다.
+인증은 추가하지 않고 모든 `/me` API와 새 Shopping Session은 single-user mode의 고정 사용자
+`id=1`을 사용한다. 기존 Shopping Session도 migration에서 같은 사용자로 backfill한다.
 
 ```text
 users
@@ -257,7 +258,7 @@ store_products
 ```
 
 추천 후보와 OpenAI 결과의 Store/Product 소속 검증은 이 관계를 기준으로 한다. B5 migration은
-기존 demo Catalog가 바로 동작하도록 현재 Store와 Product 조합을 채우며, product seed도 같은
+기존 reference Catalog가 바로 동작하도록 현재 Store와 Product 조합을 채우며, product seed도 같은
 관계를 idempotent하게 보완한다. 기존 Store/Product 공개 식별자는 변경하지 않는다.
 
 ## 12. B6 Trip Shopping

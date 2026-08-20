@@ -22,6 +22,9 @@ def test_defaults_target_final_recognition_products() -> None:
         "anillo_fragrance_of_life_10_001",
         "hatchingroom_wavy_bag_mini_nylon_001",
         "zara_leather_tote_001",
+        "vivienne_westwood_wallet_5115002ew_001",
+        "dior_saddle_bloom_card_wallet_s5611ctzq_m928_001",
+        "dior_beauty_velvet_pouch_black_001",
     )
 
 
@@ -67,7 +70,7 @@ def test_product_id_override_indexes_all_images_once_in_filename_order(
     looked_up_product_ids: list[str] = []
     replace_calls: list[tuple[str, list[ProductImageEmbedding]]] = []
 
-    class FakeEmbedder:
+    class StaticEmbedder:
         def __init__(self, **_kwargs: object) -> None:
             pass
 
@@ -76,18 +79,18 @@ def test_product_id_override_indexes_all_images_once_in_filename_order(
             return [float(len(embedded_image_bytes))] * 512
 
     @dataclass
-    class FakeProduct:
+    class TestProduct:
         product_id: str
 
-    class FakeProductRepository:
+    class ScriptedProductRepository:
         def __init__(self, _db: object) -> None:
             pass
 
-        def get_by_product_id(self, requested_product_id: str) -> FakeProduct:
+        def get_by_product_id(self, requested_product_id: str) -> TestProduct:
             looked_up_product_ids.append(requested_product_id)
-            return FakeProduct(product_id=requested_product_id)
+            return TestProduct(product_id=requested_product_id)
 
-    class FakeEmbeddingRepository:
+    class RecordingEmbeddingRepository:
         def __init__(self, _db: object) -> None:
             pass
 
@@ -102,13 +105,13 @@ def test_product_id_override_indexes_all_images_once_in_filename_order(
             return len(captured_embeddings)
 
     @contextmanager
-    def fake_session_local() -> Generator[object, None, None]:
+    def test_session_factory() -> Generator[object, None, None]:
         yield object()
 
-    monkeypatch.setattr(index_script, "OpenCLIPImageEmbedder", FakeEmbedder)
-    monkeypatch.setattr(index_script, "ProductRepository", FakeProductRepository)
-    monkeypatch.setattr(index_script, "ProductEmbeddingRepository", FakeEmbeddingRepository)
-    monkeypatch.setattr(index_script, "SessionLocal", fake_session_local)
+    monkeypatch.setattr(index_script, "OpenCLIPImageEmbedder", StaticEmbedder)
+    monkeypatch.setattr(index_script, "ProductRepository", ScriptedProductRepository)
+    monkeypatch.setattr(index_script, "ProductEmbeddingRepository", RecordingEmbeddingRepository)
+    monkeypatch.setattr(index_script, "SessionLocal", test_session_factory)
 
     index_script.main(
         [

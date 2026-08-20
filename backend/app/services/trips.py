@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.constants import DEMO_USER_ID
+from app.constants import SINGLE_USER_ID
 from app.domain.enums import ReservationStatus
 from app.errors import AppError
 from app.models.product import Product
@@ -26,20 +26,20 @@ class TripService:
     def create_trip(self, values: dict[str, Any]) -> Trip:
         self._require_user()
         normalized = _normalize_datetime_values(values)
-        trip = self._trips.add(Trip(user_id=DEMO_USER_ID, **normalized))
+        trip = self._trips.add(Trip(user_id=SINGLE_USER_ID, **normalized))
         self._db.commit()
         return trip
 
     def list_trips(self) -> list[Trip]:
         self._require_user()
-        return self._trips.list_trips(DEMO_USER_ID)
+        return self._trips.list_trips(SINGLE_USER_ID)
 
     def get_trip(self, trip_id: UUID, *, detail: bool = False) -> Trip:
         self._require_user()
         trip = (
-            self._trips.get_detail(DEMO_USER_ID, trip_id)
+            self._trips.get_detail(SINGLE_USER_ID, trip_id)
             if detail
-            else self._trips.get(DEMO_USER_ID, trip_id)
+            else self._trips.get(SINGLE_USER_ID, trip_id)
         )
         if trip is None:
             raise AppError(404, "TRIP_NOT_FOUND", "Trip was not found.")
@@ -83,7 +83,7 @@ class TripService:
         return [
             item.product
             for item in self._personalization.list_store_wishlist_products(
-                DEMO_USER_ID,
+                SINGLE_USER_ID,
                 store_id,
             )
         ]
@@ -109,7 +109,7 @@ class TripService:
             raise AppError(404, "PRODUCT_NOT_FOUND", "A reservation product was not found.")
 
         wishlist_ids = {
-            item.product_id for item in self._personalization.list_wishlist(DEMO_USER_ID)
+            item.product_id for item in self._personalization.list_wishlist(SINGLE_USER_ID)
         }
         store_product_ids = {item.product_id for item in store.store_products}
         invalid_products = [
@@ -125,7 +125,7 @@ class TripService:
             )
 
         reservation = VisitReservation(
-            user_id=DEMO_USER_ID,
+            user_id=SINGLE_USER_ID,
             trip_id=trip.id,
             store=store,
             scheduled_at=scheduled_at.astimezone(UTC),
@@ -141,19 +141,19 @@ class TripService:
 
     def list_reservations(self, trip_id: UUID) -> list[VisitReservation]:
         trip = self.get_trip(trip_id)
-        return self._trips.list_reservations(DEMO_USER_ID, trip.id)
+        return self._trips.list_reservations(SINGLE_USER_ID, trip.id)
 
     def cancel_reservation(self, reservation_id: UUID) -> None:
         self._require_user()
-        reservation = self._trips.get_reservation(DEMO_USER_ID, reservation_id)
+        reservation = self._trips.get_reservation(SINGLE_USER_ID, reservation_id)
         if reservation is None:
             raise AppError(404, "RESERVATION_NOT_FOUND", "Visit reservation was not found.")
         reservation.status = ReservationStatus.CANCELLED
         self._db.commit()
 
     def _require_user(self) -> None:
-        if self._personalization.get_user(DEMO_USER_ID) is None:
-            raise AppError(500, "DEMO_USER_NOT_CONFIGURED", "The demo user is not configured.")
+        if self._personalization.get_user(SINGLE_USER_ID) is None:
+            raise AppError(500, "SINGLE_USER_NOT_CONFIGURED", "The single user is not configured.")
 
 
 def _normalize_datetime_values(values: dict[str, Any]) -> dict[str, Any]:

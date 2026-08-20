@@ -27,7 +27,7 @@ def test_store_seed_adds_production_stores_and_is_idempotent(db_session: Session
     assert {store.type for store in stores} == {"DEPARTMENT_STORE", "DUTY_FREE"}
     assert stores[-1].terminal == "T1"
     assert stores[-1].latitude is not None
-    assert all(store.image_url is None for store in stores)
+    assert all(store.image_url for store in stores)
     assert all(store.is_active is True for store in stores)
 
 

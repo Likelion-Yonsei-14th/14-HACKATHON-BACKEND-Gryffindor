@@ -10,9 +10,9 @@
     "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
-      "demo": true,
-      "recognitionTest": true,
-      "physicalDemo": true,
+      "referenceCatalog": true,
+      "recognitionEnabled": true,
+      "physicalReferenceAvailable": true,
       "recommendationSource": true,
       "recommendationGroup": "fragrance",
       "variant": "100ml",
@@ -38,9 +38,9 @@
     "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
-      "demo": true,
-      "recognitionTest": true,
-      "physicalDemo": true,
+      "referenceCatalog": true,
+      "recognitionEnabled": true,
+      "physicalReferenceAvailable": true,
       "recommendationSource": true,
       "recommendationGroup": "fragrance",
       "variant": "50ml",
@@ -61,13 +61,13 @@
     "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
-      "demo": true,
-      "recognitionTest": true,
-      "physicalDemo": true,
+      "referenceCatalog": true,
+      "recognitionEnabled": true,
+      "physicalReferenceAvailable": true,
       "recommendationSource": true,
       "recommendationGroup": "fragrance",
       "variant": "10ml",
-      "source": "User-confirmed physical demo product",
+      "source": "User-confirmed physical reference product",
       "sourcePage": "https://www.anillo.co.kr/category/parfum/73/",
       "imageNeedsReplacement": true
     },
@@ -84,9 +84,9 @@
     "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
-      "demo": true,
-      "recognitionTest": true,
-      "physicalDemo": true,
+      "referenceCatalog": true,
+      "recognitionEnabled": true,
+      "physicalReferenceAvailable": true,
       "recommendationSource": true,
       "recommendationGroup": "bag",
       "color": "Black",
@@ -113,9 +113,9 @@
     "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
-      "demo": true,
-      "recognitionTest": true,
-      "physicalDemo": true,
+      "referenceCatalog": true,
+      "recognitionEnabled": true,
+      "physicalReferenceAvailable": true,
       "recommendationSource": true,
       "recommendationGroup": "bag",
       "source": "ZARA Korea",
@@ -136,7 +136,7 @@
     "taxRefundSupported": false,
     "metadata": {
       "productionCatalog": true,
-      "recognitionTest": false,
+      "recognitionEnabled": false,
       "recommendationCandidate": true,
       "recommendationGroup": "bag",
       "size": "S",
@@ -162,7 +162,7 @@
     "taxRefundSupported": false,
     "metadata": {
       "productionCatalog": true,
-      "recognitionTest": false,
+      "recognitionEnabled": false,
       "recommendationCandidate": true,
       "recommendationGroup": "fragrance",
       "variant": "75ml",
@@ -188,7 +188,7 @@
     "taxRefundSupported": false,
     "metadata": {
       "productionCatalog": true,
-      "recognitionTest": false,
+      "recognitionEnabled": false,
       "recommendationCandidate": true,
       "recommendationGroup": "bag",
       "size": "S",
@@ -214,7 +214,7 @@
     "taxRefundSupported": false,
     "metadata": {
       "productionCatalog": true,
-      "recognitionTest": false,
+      "recognitionEnabled": false,
       "recommendationCandidate": true,
       "recommendationGroup": "bag",
       "size": "S",
@@ -240,7 +240,7 @@
     "taxRefundSupported": false,
     "metadata": {
       "productionCatalog": true,
-      "recognitionTest": false,
+      "recognitionEnabled": false,
       "recommendationCandidate": true,
       "recommendationGroup": "fragrance",
       "variant": "100ml",
@@ -253,5 +253,91 @@
       "10000000-0000-0000-0000-000000000005",
       "10000000-0000-0000-0000-000000000008"
     ]
+  },
+  {
+    "productId": "vivienne_westwood_wallet_5115002ew_001",
+    "sku": "5115002EW-S000D-N403",
+    "brand": "Vivienne Westwood",
+    "name": "여성 반지갑 5115002EW S000D N403",
+    "category": "bag",
+    "imageUrl": "https://cdn.011st.com/11dims/resize/600x600/quality/75/11src/product/9214370238/B.webp?493579910=",
+    "priceKrw": 198710,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": false,
+    "metadata": {
+      "referenceCatalog": true,
+      "recognitionEnabled": true,
+      "physicalReferenceAvailable": true,
+      "recommendationSource": true,
+      "recommendationGroup": "bag",
+      "color": "Black",
+      "source": "11st / Shinsegae Mall",
+      "sourcePage": "https://www.11st.co.kr/products/9214370238",
+      "originalPriceKrw": 241000,
+      "priceBasis": "11st displayed discounted selling price"
+    },
+    "storeIds": []
+  },
+  {
+    "productId": "dior_saddle_bloom_card_wallet_s5611ctzq_m928_001",
+    "sku": "S5611CTZQ-M928",
+    "brand": "Dior",
+    "name": "Saddle Bloom 카드 지갑 블루 Dior Oblique 자카드",
+    "category": "bag",
+    "imageUrl": "https://assets.christiandior.com/is/image/diorprod/S5611CTZQM928_SBG_E01?$r9x10_raw$=&bfc=on&crop=0%2C0%2C4000%2C5000&hei=2000&qlt=80&scale=1&wid=1850",
+    "priceKrw": 690000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": false,
+    "metadata": {
+      "referenceCatalog": true,
+      "recognitionEnabled": true,
+      "physicalReferenceAvailable": true,
+      "recommendationSource": true,
+      "recommendationGroup": "bag",
+      "color": "Blue",
+      "material": "Cotton / technical fabric / calfskin",
+      "sizeCm": {
+        "width": 11,
+        "height": 7.5,
+        "depth": 3
+      },
+      "source": "Dior Korea official",
+      "sourcePage": "https://www.dior.com/ko_kr/fashion/products/S5611CTZQ_M928",
+      "priceBasis": "Dior Korea official retail price"
+    },
+    "storeIds": []
+  },
+  {
+    "productId": "dior_beauty_velvet_pouch_black_001",
+    "sku": "AMAZON-B0CRQMHVC8",
+    "brand": "Dior",
+    "name": "Christian Dior Black Pouch Velvet Cosmetic Pouch Novelty Pouch Logo Present Black",
+    "category": "bag",
+    "imageUrl": "https://image-cdn.ubuy.com/dior-christian-dior-black-pouch-velvet/400_400_100/67499d6375fd347498637dcb.jpg",
+    "priceKrw": 202409,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": false,
+    "metadata": {
+      "referenceCatalog": true,
+      "recognitionEnabled": true,
+      "physicalReferenceAvailable": true,
+      "recommendationSource": true,
+      "recommendationGroup": "bag",
+      "color": "Black",
+      "material": "Velvet",
+      "sizeCm": {
+        "width": 17.5,
+        "depth": 6,
+        "height": 11
+      },
+      "itemModelNumber": "3348901700665",
+      "asin": "B0CRQMHVC8",
+      "source": "Amazon Canada",
+      "sourcePage": "https://www.amazon.ca/Dior-Christian-Cosmetic-Novelty-Present/dp/B0CRQMHVC8",
+      "priceBasis": "Amazon Canada listed price USD 145; converted to KRW at 1 USD = 1,395.92 KRW",
+      "authenticityVerified": false,
+      "listedPriceUsd": 145
+    },
+    "storeIds": []
   }
 ]

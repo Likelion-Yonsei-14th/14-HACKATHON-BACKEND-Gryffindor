@@ -6,11 +6,13 @@ from app.providers.recognition import (
 )
 
 
-class MockRecognitionProviderError(RecognitionProviderError):
+class ScriptedRecognitionProviderError(RecognitionProviderError):
     pass
 
 
-class MockRecognitionProvider:
+class ScriptedRecognitionProvider:
+    """Return a configured recognition decision without inspecting the image."""
+
     def __init__(
         self,
         *,
@@ -27,8 +29,9 @@ class MockRecognitionProvider:
         image_bytes: bytes,
         candidates: list[RecognitionCandidate],
     ) -> RecognitionDecision:
+        del image_bytes
         if self._should_fail:
-            raise MockRecognitionProviderError("Configured mock provider failure")
+            raise ScriptedRecognitionProviderError("Configured recognition provider failure")
 
         if self._status is RecognitionStatus.UNKNOWN or not candidates:
             return RecognitionDecision(status=RecognitionStatus.UNKNOWN)

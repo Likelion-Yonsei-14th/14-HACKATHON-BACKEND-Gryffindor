@@ -19,9 +19,9 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default="postgresql+psycopg://postgres:postgres@localhost:55433/gryffindor"
     )
-    recognition_provider: Literal["mock", "openai", "openclip"] = "openclip"
-    mock_recognition_status: Literal["MATCHED", "AMBIGUOUS", "UNKNOWN"] = "MATCHED"
-    mock_recognition_product_id: str | None = "test_outer_001"
+    recognition_provider: Literal["scripted", "openai", "openclip"] = "openclip"
+    scripted_recognition_status: Literal["MATCHED", "AMBIGUOUS", "UNKNOWN"] = "MATCHED"
+    scripted_recognition_product_id: str | None = "diptyque_leau_papier_100_001"
     recognition_max_image_bytes: int = Field(default=5 * 1024 * 1024, gt=0)
     recognition_max_candidates: int = Field(default=20, gt=0)
     recognition_debug_save_images: bool = False
@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     openclip_pretrained: str = Field(default="laion2b_s34b_b79k", min_length=1)
     openclip_device: str = Field(default="auto", min_length=1)
     openclip_embedding_dimension: int = Field(default=512, gt=0)
-    # Calibrated on the Gen2 demo crops; remeasure when the catalog or encoder changes.
+    # Calibrated on the Gen2 reference crops; remeasure when the catalog or encoder changes.
     openclip_match_threshold: float = Field(default=0.62, ge=-1, le=1)
     openclip_margin_threshold: float = Field(default=0.06, ge=0, le=2)
     frankfurter_base_url: str = Field(

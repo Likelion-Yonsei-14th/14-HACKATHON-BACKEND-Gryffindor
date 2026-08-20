@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.me import get_document_extraction_provider, get_recommendation_provider
-from app.constants import DEMO_USER_ID
+from app.constants import SINGLE_USER_ID
 from app.domain.enums import TriggerType
 from app.models.personalization import Flight, Receipt, ReceiptItem, StoreProduct
 from app.models.product import Product
@@ -38,7 +38,7 @@ def _jpeg_bytes() -> bytes:
     return buffer.getvalue()
 
 
-class FakeFlightProvider:
+class ScriptedFlightProvider:
     def __init__(self, flight: FlightExtraction) -> None:
         self.flight = flight
 
@@ -98,8 +98,8 @@ def test_trip_hotel_flight_and_mypage_vertical_slice(
     hotel = client.put(
         f"/api/v1/me/trips/{trip_id}/hotel",
         json={
-            "name": "Hotel Demo Seoul",
-            "address": "서울특별시 중구 Demo",
+            "name": "Hotel Reference Seoul",
+            "address": "서울특별시 중구",
             "latitude": None,
             "longitude": None,
             "checkInAt": "2026-08-20T15:00:00+09:00",
@@ -109,10 +109,10 @@ def test_trip_hotel_flight_and_mypage_vertical_slice(
     assert hotel.status_code == 200
     assert hotel.json()["latitude"] is None
     assert client.get(f"/api/v1/me/trips/{trip_id}/hotel").json()["name"] == (
-        "Hotel Demo Seoul"
+        "Hotel Reference Seoul"
     )
 
-    provider = FakeFlightProvider(
+    provider = ScriptedFlightProvider(
         FlightExtraction(
             departure_airport="ICN",
             arrival_airport="JFK",
@@ -144,7 +144,7 @@ def test_trip_hotel_flight_and_mypage_vertical_slice(
     assert detail.status_code == 200
     assert detail.json()["trip"]["title"] == "서울 럭셔리 쇼핑 여행"
     assert detail.json()["flights"][0]["flightNumber"] == "KE081"
-    assert detail.json()["hotel"]["name"] == "Hotel Demo Seoul"
+    assert detail.json()["hotel"]["name"] == "Hotel Reference Seoul"
     assert detail.json()["visitReservations"] == []
     assert client.get("/api/v1/me").json()["trips"][0]["id"] == trip_id
 
@@ -171,15 +171,15 @@ def test_trip_feed_uses_trip_history_location_airport_and_db_allowlist(
         client.put(
             f"/api/v1/me/trips/{trip_id}/hotel",
             json={
-                "name": "Hotel Demo Seoul",
+                "name": "Hotel Reference Seoul",
                 "latitude": 37.56,
                 "longitude": 126.98,
             },
         ).status_code
         == 200
     )
-    assert client.post("/api/v1/me/wishlist/mcm_stark_backpack_001").status_code == 200
-    assert client.post("/api/v1/me/wishlist/mcm_eau_de_parfum_50_001").status_code == 200
+    assert client.post("/api/v1/me/wishlist/mcm_aren_lambskin_shoulder_s_001").status_code == 200
+    assert client.post("/api/v1/me/wishlist/mcm_cosmic_star_edp_75_001").status_code == 200
 
     products = {product.product_id: product for product in db_session.scalars(select(Product))}
     near_store = db_session.get(Store, NEAR_STORE_ID)
@@ -207,11 +207,11 @@ def test_trip_feed_uses_trip_history_location_airport_and_db_allowlist(
     db_session.add(
         StoreProduct(
             store_id=inactive_store.id,
-            product_id=products["mcm_stark_backpack_001"].id,
+            product_id=products["mcm_aren_lambskin_shoulder_s_001"].id,
         )
     )
     shopping_session = ShoppingSession(
-        user_id=DEMO_USER_ID,
+        user_id=SINGLE_USER_ID,
         store_id=NEAR_STORE_ID,
         currency="USD",
     )
@@ -220,7 +220,7 @@ def test_trip_feed_uses_trip_history_location_airport_and_db_allowlist(
     db_session.add(
         SessionProduct(
             session_id=shopping_session.id,
-            product_id=products["mcm_aren_tote_001"].id,
+            product_id=products["mcm_aren_maxi_monogram_leather_hobo_s_001"].id,
             first_observed_at=datetime(2026, 8, 19, 1, tzinfo=UTC),
             last_observed_at=datetime(2026, 8, 19, 2, tzinfo=UTC),
             max_occupancy_ratio=Decimal("0.4"),
@@ -229,11 +229,11 @@ def test_trip_feed_uses_trip_history_location_airport_and_db_allowlist(
             observation_count=4,
         )
     )
-    purchase = Receipt(user_id=DEMO_USER_ID, store_name="Demo Store", currency="KRW")
+    purchase = Receipt(user_id=SINGLE_USER_ID, store_name="Reference Store", currency="KRW")
     purchase.items.append(
         ReceiptItem(
-            product_name=products["mcm_diamond_eau_de_parfum_50_001"].name,
-            product=products["mcm_diamond_eau_de_parfum_50_001"],
+            product_name=products["mcm_jolly_rabbit_100_001"].name,
+            product=products["mcm_jolly_rabbit_100_001"],
             quantity=1,
             price=245_000,
         )
@@ -241,7 +241,7 @@ def test_trip_feed_uses_trip_history_location_airport_and_db_allowlist(
     db_session.add(purchase)
     db_session.add(
         Flight(
-            user_id=DEMO_USER_ID,
+            user_id=SINGLE_USER_ID,
             trip_id=UUID(trip_id),
             departure_airport="ICN",
             arrival_airport="JFK",
@@ -255,13 +255,16 @@ def test_trip_feed_uses_trip_history_location_airport_and_db_allowlist(
         assert context.trip is not None
         assert str(context.trip.trip_id) == trip_id
         assert context.hotel is not None
-        assert context.hotel.name == "Hotel Demo Seoul"
+        assert context.hotel.name == "Hotel Reference Seoul"
         assert set(context.wishlist_product_ids) >= {
-            "mcm_stark_backpack_001",
-            "mcm_eau_de_parfum_50_001",
+            "mcm_aren_lambskin_shoulder_s_001",
+            "mcm_cosmic_star_edp_75_001",
         }
-        assert any(item.product_id == "mcm_aren_tote_001" for item in context.viewed_products)
-        assert context.purchased_product_ids == ["mcm_diamond_eau_de_parfum_50_001"]
+        assert any(
+            item.product_id == "mcm_aren_maxi_monogram_leather_hobo_s_001"
+            for item in context.viewed_products
+        )
+        assert context.purchased_product_ids == ["mcm_jolly_rabbit_100_001"]
         assert context.latest_flight is not None
         assert context.latest_flight.terminal == "T1"
         assert len(context.candidate_products) <= 20
@@ -270,7 +273,7 @@ def test_trip_feed_uses_trip_history_location_airport_and_db_allowlist(
             product.category.casefold() in {"bag", "perfume"}
             for product in context.candidate_products
         )
-        assert "mcm_diamond_eau_de_parfum_50_001" not in {
+        assert "mcm_jolly_rabbit_100_001" not in {
             product.product_id for product in context.candidate_products
         }
 
@@ -289,7 +292,7 @@ def test_trip_feed_uses_trip_history_location_airport_and_db_allowlist(
                     reason="숙소에서 가깝고 관심 상품을 취급합니다.",
                     products=[
                         RecommendationProductDecision(
-                            product_id="mcm_stark_backpack_001",
+                            product_id="mcm_aren_lambskin_shoulder_s_001",
                             reason="관심 있게 본 가방과 잘 맞는 Wishlist 상품입니다.",
                         )
                     ],
@@ -299,7 +302,7 @@ def test_trip_feed_uses_trip_history_location_airport_and_db_allowlist(
                     reason="출국 터미널에서 관심 향수를 준비할 수 있습니다.",
                     products=[
                         RecommendationProductDecision(
-                            product_id="mcm_eau_de_parfum_50_001",
+                            product_id="mcm_cosmic_star_edp_75_001",
                             reason="Wishlist 향수이며 출국 공항에서 구매할 수 있습니다.",
                         )
                     ],
@@ -315,10 +318,16 @@ def test_trip_feed_uses_trip_history_location_airport_and_db_allowlist(
     recommendations = {
         item["product"]["productId"]: item for item in response.json()["recommendations"]
     }
-    assert recommendations["mcm_stark_backpack_001"]["stores"][0]["distanceFromHotelKm"] < 1
-    assert recommendations["mcm_stark_backpack_001"]["stores"][0]["hasWishlistItems"] is True
-    assert recommendations["mcm_stark_backpack_001"]["stores"][0]["imageUrl"] == (STORE_IMAGE_URL)
-    assert recommendations["mcm_eau_de_parfum_50_001"]["stores"][0]["terminal"] == "T1"
+    assert (
+        recommendations["mcm_aren_lambskin_shoulder_s_001"]["stores"][0]["distanceFromHotelKm"] < 1
+    )
+    assert (
+        recommendations["mcm_aren_lambskin_shoulder_s_001"]["stores"][0]["hasWishlistItems"] is True
+    )
+    assert recommendations["mcm_aren_lambskin_shoulder_s_001"]["stores"][0]["imageUrl"] == (
+        STORE_IMAGE_URL
+    )
+    assert recommendations["mcm_cosmic_star_edp_75_001"]["stores"][0]["terminal"] == "T1"
 
 
 def test_trip_feed_rejects_openai_ids_outside_candidates(
@@ -413,15 +422,15 @@ def test_store_wishlist_intersection_and_reservation_validation(
     assert store is not None
     store.image_url = STORE_IMAGE_URL
     db_session.commit()
-    assert client.post("/api/v1/me/wishlist/mcm_stark_backpack_001").status_code == 200
-    assert client.post("/api/v1/me/wishlist/demo_perfume_001").status_code == 200
+    assert client.post("/api/v1/me/wishlist/mcm_aren_lambskin_shoulder_s_001").status_code == 200
+    assert client.post("/api/v1/me/wishlist/anillo_fragrance_of_life_10_001").status_code == 200
 
     intersection = client.get(f"/api/v1/me/stores/{NEAR_STORE_ID}/wishlist-products")
     assert intersection.status_code == 200
     assert intersection.json() == [
         {
-            "productId": "mcm_stark_backpack_001",
-            "name": "Stark 사이드 스터드 비세토스 백팩 S",
+            "productId": "mcm_aren_lambskin_shoulder_s_001",
+            "name": "Aren 양가죽 숄더백",
         }
     ]
 
@@ -430,11 +439,11 @@ def test_store_wishlist_intersection_and_reservation_validation(
         json={
             "storeId": str(NEAR_STORE_ID),
             "scheduledAt": "2026-08-21T15:00:00+09:00",
-            "productIds": ["mcm_stark_backpack_001"],
+            "productIds": ["mcm_aren_lambskin_shoulder_s_001"],
         },
     )
     assert valid.status_code == 201
-    assert valid.json()["products"][0]["productId"] == "mcm_stark_backpack_001"
+    assert valid.json()["products"][0]["productId"] == "mcm_aren_lambskin_shoulder_s_001"
     assert valid.json()["store"]["imageUrl"] == STORE_IMAGE_URL
     assert valid.json()["status"] == "RESERVED"
 
@@ -454,7 +463,7 @@ def test_store_wishlist_intersection_and_reservation_validation(
         json={
             "storeId": str(NEAR_STORE_ID),
             "scheduledAt": "2026-08-21T15:00:00+09:00",
-            "productIds": ["demo_perfume_001"],
+            "productIds": ["anillo_fragrance_of_life_10_001"],
         },
     )
     assert not_carried.status_code == 400
@@ -465,7 +474,7 @@ def test_store_wishlist_intersection_and_reservation_validation(
         json={
             "storeId": str(NEAR_STORE_ID),
             "scheduledAt": "2026-08-21T15:00:00+09:00",
-            "productIds": ["mcm_stark_charm_001"],
+            "productIds": ["mcm_aren_duo_hobo_maxi_visetos_calfskin_s_001"],
         },
     )
     assert not_wishlisted.status_code == 400
@@ -473,9 +482,7 @@ def test_store_wishlist_intersection_and_reservation_validation(
 
     store.is_active = False
     db_session.commit()
-    inactive_intersection = client.get(
-        f"/api/v1/me/stores/{NEAR_STORE_ID}/wishlist-products"
-    )
+    inactive_intersection = client.get(f"/api/v1/me/stores/{NEAR_STORE_ID}/wishlist-products")
     inactive_reservation = client.post(
         f"/api/v1/me/trips/{trip_id}/visit-reservations",
         json={

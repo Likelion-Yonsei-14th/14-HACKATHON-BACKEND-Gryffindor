@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.constants import DEMO_USER_ID
+from app.constants import SINGLE_USER_ID
 from app.domain.enums import RefundMethod
 from app.errors import AppError
 from app.models.personalization import Flight, Receipt, ReceiptItem, User, WishlistItem
@@ -28,14 +28,14 @@ class PersonalizationService:
         self._trips = TripRepository(db)
 
     def user(self) -> User:
-        user = self._personalization.get_user(DEMO_USER_ID)
+        user = self._personalization.get_user(SINGLE_USER_ID)
         if user is None:
-            raise AppError(500, "DEMO_USER_NOT_CONFIGURED", "The demo user is not configured.")
+            raise AppError(500, "SINGLE_USER_NOT_CONFIGURED", "The single user is not configured.")
         return user
 
     def list_wishlist(self) -> list[WishlistItem]:
         self.user()
-        return self._personalization.list_wishlist(DEMO_USER_ID)
+        return self._personalization.list_wishlist(SINGLE_USER_ID)
 
     def add_wishlist(self, public_product_id: str) -> Product:
         self.user()
@@ -43,10 +43,10 @@ class PersonalizationService:
         if product is None:
             raise AppError(404, "PRODUCT_NOT_FOUND", "Product was not found.")
 
-        existing = self._personalization.get_wishlist_item(DEMO_USER_ID, product.id)
+        existing = self._personalization.get_wishlist_item(SINGLE_USER_ID, product.id)
         if existing is None:
             self._personalization.add_wishlist_item(
-                WishlistItem(user_id=DEMO_USER_ID, product_id=product.id)
+                WishlistItem(user_id=SINGLE_USER_ID, product_id=product.id)
             )
             try:
                 self._db.commit()
@@ -59,7 +59,7 @@ class PersonalizationService:
         product = self._products.get_by_product_id(public_product_id)
         if product is None:
             return
-        item = self._personalization.get_wishlist_item(DEMO_USER_ID, product.id)
+        item = self._personalization.get_wishlist_item(SINGLE_USER_ID, product.id)
         if item is not None:
             self._personalization.delete_wishlist_item(item)
             self._db.commit()
@@ -71,7 +71,7 @@ class PersonalizationService:
         trip_id: UUID | None = None,
     ) -> Receipt:
         self.user()
-        if trip_id is not None and self._trips.get(DEMO_USER_ID, trip_id) is None:
+        if trip_id is not None and self._trips.get(SINGLE_USER_ID, trip_id) is None:
             raise AppError(404, "TRIP_NOT_FOUND", "Trip was not found.")
         try:
             extraction = await provider.extract_receipt(image_bytes)
@@ -80,7 +80,7 @@ class PersonalizationService:
 
         products_by_name = _products_by_exact_name(self._products.list_all())
         receipt = Receipt(
-            user_id=DEMO_USER_ID,
+            user_id=SINGLE_USER_ID,
             trip_id=trip_id,
             store_name=extraction.store_name,
             purchased_at=_as_utc(extraction.purchased_at),
@@ -109,7 +109,7 @@ class PersonalizationService:
         trip_id: UUID | None = None,
     ) -> Flight:
         self.user()
-        if trip_id is not None and self._trips.get(DEMO_USER_ID, trip_id) is None:
+        if trip_id is not None and self._trips.get(SINGLE_USER_ID, trip_id) is None:
             raise AppError(404, "TRIP_NOT_FOUND", "Trip was not found.")
         try:
             extraction = await provider.extract_flight(image_bytes)
@@ -118,7 +118,7 @@ class PersonalizationService:
 
         flight = self._personalization.add_flight(
             Flight(
-                user_id=DEMO_USER_ID,
+                user_id=SINGLE_USER_ID,
                 trip_id=trip_id,
                 departure_airport=extraction.departure_airport,
                 arrival_airport=extraction.arrival_airport,
@@ -134,7 +134,7 @@ class PersonalizationService:
 
     def update_flight(self, flight_id: UUID, changes: dict[str, Any]) -> Flight:
         self.user()
-        flight = self._personalization.get_flight(DEMO_USER_ID, flight_id)
+        flight = self._personalization.get_flight(SINGLE_USER_ID, flight_id)
         if flight is None:
             raise AppError(404, "FLIGHT_NOT_FOUND", "Flight was not found.")
 
@@ -147,14 +147,14 @@ class PersonalizationService:
 
     def list_receipts(self) -> list[Receipt]:
         self.user()
-        return self._personalization.list_receipts(DEMO_USER_ID)
+        return self._personalization.list_receipts(SINGLE_USER_ID)
 
     def list_purchases(self) -> list[Receipt]:
         return self.list_receipts()
 
     def list_session_purchased_products(self) -> list[SessionProduct]:
-        """Return the Demo User's SessionProducts with purchase_state == PURCHASED."""
-        return self._personalization.list_session_purchased_products(DEMO_USER_ID)
+        """Return the Single User's SessionProducts with purchase_state == PURCHASED."""
+        return self._personalization.list_session_purchased_products(SINGLE_USER_ID)
 
     def update_purchase_refund_method(
         self,
@@ -162,7 +162,7 @@ class PersonalizationService:
         refund_method: RefundMethod,
     ) -> Receipt:
         self.user()
-        purchase = self._personalization.get_receipt(DEMO_USER_ID, purchase_id)
+        purchase = self._personalization.get_receipt(SINGLE_USER_ID, purchase_id)
         if purchase is None:
             raise AppError(404, "PURCHASE_NOT_FOUND", "Purchase was not found.")
         purchase.refund_method = refund_method
@@ -171,7 +171,7 @@ class PersonalizationService:
 
     def latest_flight(self) -> Flight | None:
         self.user()
-        return self._personalization.latest_flight(DEMO_USER_ID)
+        return self._personalization.latest_flight(SINGLE_USER_ID)
 
 
 def _products_by_exact_name(products: list[Product]) -> dict[str, Product]:

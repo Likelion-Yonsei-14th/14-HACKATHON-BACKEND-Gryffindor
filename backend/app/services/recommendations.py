@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.constants import DEMO_USER_ID
+from app.constants import SINGLE_USER_ID
 from app.errors import AppError
 from app.models.personalization import Flight
 from app.models.product import Product
@@ -94,9 +94,7 @@ class BuiltRecommendationContext:
     current_distance_by_store: dict[UUID, float | None] = field(
         default_factory=lambda: dict[UUID, float | None]()
     )
-    wishlist_match_by_store: dict[UUID, bool] = field(
-        default_factory=lambda: dict[UUID, bool]()
-    )
+    wishlist_match_by_store: dict[UUID, bool] = field(default_factory=lambda: dict[UUID, bool]())
 
 
 class RecommendationContextBuilder:
@@ -107,7 +105,7 @@ class RecommendationContextBuilder:
 
     def build(self) -> BuiltRecommendationContext:
         history = self._build_history()
-        latest_flight = self._repository.latest_flight(DEMO_USER_ID)
+        latest_flight = self._repository.latest_flight(SINGLE_USER_ID)
         stores = self._repository.list_candidate_stores()
         purchased_id_set = set(history.purchased_ids)
 
@@ -183,10 +181,10 @@ class RecommendationContextBuilder:
         current_longitude: float | None = None,
     ) -> BuiltRecommendationContext:
         history = self._build_history()
-        trip = self._trips.get_detail(DEMO_USER_ID, trip_id)
+        trip = self._trips.get_detail(SINGLE_USER_ID, trip_id)
         if trip is None:
             raise AppError(404, "TRIP_NOT_FOUND", "Trip was not found.")
-        latest_flight = self._repository.latest_trip_flight(DEMO_USER_ID, trip.id)
+        latest_flight = self._repository.latest_trip_flight(SINGLE_USER_ID, trip.id)
         hotel = trip.hotel
         purchased_id_set = set(history.purchased_ids)
         wishlist_id_set = set(history.wishlist_ids)
@@ -349,10 +347,10 @@ class RecommendationContextBuilder:
         )
 
     def _build_history(self) -> _History:
-        if self._repository.get_user(DEMO_USER_ID) is None:
-            raise AppError(500, "DEMO_USER_NOT_CONFIGURED", "The demo user is not configured.")
-        wishlist_items = self._repository.list_wishlist(DEMO_USER_ID)
-        receipts = self._repository.list_receipts(DEMO_USER_ID)
+        if self._repository.get_user(SINGLE_USER_ID) is None:
+            raise AppError(500, "SINGLE_USER_NOT_CONFIGURED", "The single user is not configured.")
+        wishlist_items = self._repository.list_wishlist(SINGLE_USER_ID)
+        receipts = self._repository.list_receipts(SINGLE_USER_ID)
         purchased_ids = sorted(
             {
                 item.product.product_id
@@ -374,7 +372,7 @@ class RecommendationContextBuilder:
             for item in receipt.items
         ]
         viewed_aggregates: dict[str, _ViewedAggregate] = {}
-        for session_product in self._repository.list_recent_session_products(DEMO_USER_ID):
+        for session_product in self._repository.list_recent_session_products(SINGLE_USER_ID):
             public_product_id = session_product.product.product_id
             aggregate = viewed_aggregates.setdefault(public_product_id, _ViewedAggregate())
             aggregate.observation_count += session_product.observation_count

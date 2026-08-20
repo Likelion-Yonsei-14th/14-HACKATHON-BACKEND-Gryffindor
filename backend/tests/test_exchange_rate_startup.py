@@ -7,7 +7,7 @@ from app.core.config import Settings
 
 def test_application_checks_exchange_rates_during_startup(monkeypatch: MonkeyPatch) -> None:
     checked_settings: list[Settings] = []
-    settings = Settings(app_env="test", recognition_provider="mock")
+    settings = Settings(app_env="test", recognition_provider="scripted")
 
     def record_startup_check(received_settings: Settings) -> None:
         checked_settings.append(received_settings)
@@ -34,7 +34,7 @@ def test_application_can_disable_startup_check_for_isolated_tests(
     monkeypatch.setattr(
         main_module,
         "get_settings",
-        lambda: Settings(app_env="test", recognition_provider="mock"),
+        lambda: Settings(app_env="test", recognition_provider="scripted"),
     )
     monkeypatch.setattr(
         main_module,
@@ -42,7 +42,5 @@ def test_application_can_disable_startup_check_for_isolated_tests(
         fail_if_called,
     )
 
-    with TestClient(
-        main_module.create_app(enable_exchange_rate_startup=False)
-    ) as client:
+    with TestClient(main_module.create_app(enable_exchange_rate_startup=False)) as client:
         assert client.get("/health").status_code == 200

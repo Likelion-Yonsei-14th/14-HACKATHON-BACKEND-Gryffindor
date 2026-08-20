@@ -60,8 +60,8 @@ Backend에서 Meta DAT, Android Camera, ML Kit 코드를 구현하지 않는다.
 
 - `/api/v1` DTO는 가능한 한 backward-compatible하게 유지한다.
 - 필드명을 임의로 변경하지 않는다.
-- Mock Provider와 Real Provider는 동일한 응답 DTO를 사용한다.
-- 실제 데이터 연동 전에도 Mock Mode에서 모든 화면 흐름이 동작해야 한다.
+- Scripted Provider와 External Provider는 동일한 응답 DTO를 사용한다.
+- 실제 데이터 연동 전에도 Scripted Mode에서 모든 화면 흐름이 동작해야 한다.
 
 ## 5. OpenAI
 
@@ -69,7 +69,7 @@ Backend에서 Meta DAT, Android Camera, ML Kit 코드를 구현하지 않는다.
 - 이미지 인식 결과는 자유 텍스트 파싱이 아니라 Structured Output schema로 제한한다.
 - 모델명은 환경 변수로 교체 가능하게 한다.
 - 실시간 영상 전체를 OpenAI로 전송하지 않는다. 앱에서 gating된 단일 crop만 받는다.
-- 실제 OpenAI 호출 테스트는 opt-in으로 두고 일반 CI 테스트에서는 fake provider를 사용한다.
+- 실제 OpenAI 호출 테스트는 opt-in으로 두고 일반 CI 테스트에서는 scripted provider를 사용한다.
 
 ## 6. 데이터
 
@@ -85,5 +85,5 @@ Backend에서 Meta DAT, Android Camera, ML Kit 코드를 구현하지 않는다.
 - API contract와 일치한다.
 - happy path test가 있다.
 - 실패 케이스가 정의되어 있다.
-- Mock Mode와 Real Mode의 DTO가 동일하다.
+- Scripted Mode와 External Mode의 DTO가 동일하다.
 - Swagger/OpenAPI에서 직접 검증 가능하다.

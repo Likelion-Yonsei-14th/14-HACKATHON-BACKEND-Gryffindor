@@ -10,7 +10,7 @@ UI 완성도보다 API contract와 실제 인식 pipeline을 우선한다.
 
 ### 2026-08-17
 
-Android UI 담당자가 실제 디자인으로 교체하는 동안 Backend 담당자는 Mock Provider를 실제 데이터/로직으로 교체한다.
+Android UI 담당자가 실제 디자인으로 교체하는 동안 Backend 담당자는 Scripted Provider를 실제 데이터/로직으로 교체한다.
 
 양쪽 작업이 충돌하지 않도록 8월 16일까지 API DTO를 동결한다.
 
@@ -38,7 +38,7 @@ Android UI 담당자가 실제 디자인으로 교체하는 동안 Backend 담�
 
 ---
 
-# Stage 1. API Contract + Mock Vertical Slice
+# Stage 1. API Contract + Scripted Vertical Slice
 
 **가장 먼저 구현한다.**
 
@@ -46,19 +46,19 @@ Android UI 담당자가 실제 디자인으로 교체하는 동안 Backend 담�
 
 - Session create/complete
 - Product seed 5~10개
-- `MockRecognitionProvider`
+- `ScriptedRecognitionProvider`
 - `/sessions/{id}/recognize`
 - Session Product upsert
-- Mock Pricing
+- Estimated Pricing
 - Product list
 
 흐름:
 
 ```text
 POST session
-→ mock image recognition
+→ scripted recognition
 → Product lookup
-→ Mock PriceQuote
+→ Estimated PriceQuote
 → SessionProduct save
 → ProductCard response
 ```
@@ -87,7 +87,7 @@ POST session
 - 실제 상품 이미지 → 올바른 `product_id`
 - 비상품/미등록 상품 → `UNKNOWN`
 - 애매한 이미지 → `AMBIGUOUS`
-- API response는 Mock Provider와 동일
+- API response는 Scripted Provider와 동일
 
 ---
 
@@ -126,7 +126,7 @@ Meta DAT
 - session complete
 - purchase / interest review
 - Travel Plan
-- Refund Checklist Mock Provider
+- Rule-based Refund Checklist
 - Airport Catalog fixture
 - Rule-based Recommendation
 
@@ -153,7 +153,7 @@ Shopping
 - enum 확정
 - sample JSON 정리
 - Swagger 확인
-- Mock Mode로 모든 화면 데이터 반환 확인
+- Scripted Mode로 모든 화면 데이터 반환 확인
 
 이 시점 이후 UI 팀은 Backend 내부 구현과 무관하게 작업할 수 있어야 한다.
 
@@ -172,7 +172,7 @@ Backend contract를 변경하지 않고 다음을 수행한다.
 
 ## Backend 담당
 
-동시에 Mock을 실제 구현으로 교체한다.
+동시에 Scripted Provider를 실제 구현으로 교체한다.
 
 우선순위:
 
@@ -187,15 +187,15 @@ Provider 교체로 API DTO가 바뀌어서는 안 된다.
 
 ---
 
-# Stage 7. Demo Hardening
+# Stage 7. MVP Hardening
 
 구현:
 
 - timeout fallback
 - OpenAI failure 처리
 - 중복 request 방지
-- demo seed command
-- demo reset command
+- catalog seed command
+- local data reset command
 - structured logging
 - API latency 측정
 
@@ -214,7 +214,7 @@ OpenAI failure
 ## P0
 
 - API contract
-- Mock vertical slice
+- Scripted vertical slice
 - OpenAI Recognition
 - Session Product 저장
 - Product Price DTO

@@ -48,7 +48,7 @@ MVP에서 가장 중요한 것은 "정확한 기능 수"보다 하나의 사용�
 
 일반 CI에서는 OpenAI를 호출하지 않는다.
 
-### Mock Provider
+### Scripted Provider
 
 - MATCHED fixture
 - AMBIGUOUS fixture
@@ -136,7 +136,7 @@ Backend는 최소 다음 값을 로그에 남긴다.
 
 이미지 원본 자체를 로그로 저장하지 않는다.
 
-## 8. Demo Acceptance
+## 8. MVP Acceptance
 
 시연 전 최소 10회의 연속 full-flow에서 다음을 만족해야 한다.
 
@@ -144,5 +144,5 @@ Backend는 최소 다음 값을 로그에 남긴다.
 - session/product 중복 오류 없음
 - API schema 변경 없음
 - OpenAI 실패 시 앱 crash 없음
-- Mock Mode 전환 가능
-- demo reset 가능
+- Scripted Mode 전환 가능
+- local data reset 가능

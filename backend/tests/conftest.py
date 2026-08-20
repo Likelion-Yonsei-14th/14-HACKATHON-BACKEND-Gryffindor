@@ -14,8 +14,8 @@ from app.db.base import Base
 from app.db.session import get_db_session
 from app.main import create_app
 from app.models.currency_rate import CurrencyRate
-from app.scripts.seed_demo_user import seed_demo_user
 from app.scripts.seed_products import seed_products
+from app.scripts.seed_single_user import seed_single_user
 from app.scripts.seed_stores import seed_stores
 
 
@@ -30,7 +30,7 @@ def db_session() -> Generator[Session, None, None]:
     testing_session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
     with testing_session() as session:
-        seed_demo_user(session)
+        seed_single_user(session)
         seed_stores(session)
         seed_products(session)
         session.add_all(
@@ -64,9 +64,9 @@ def test_app(db_session: Session) -> Generator[FastAPI, None, None]:
     test_settings = Settings(
         app_env="test",
         database_url="sqlite+pysqlite://",
-        recognition_provider="mock",
-        mock_recognition_status="MATCHED",
-        mock_recognition_product_id="test_outer_001",
+        recognition_provider="scripted",
+        scripted_recognition_status="MATCHED",
+        scripted_recognition_product_id="diptyque_leau_papier_100_001",
         recognition_max_image_bytes=5 * 1024 * 1024,
         recognition_max_candidates=20,
         openai_api_key=None,

@@ -28,8 +28,9 @@
 │                                             │
 │ Providers                                   │
 │ ├─ RecognitionProvider                      │
-│ │   ├─ MockRecognitionProvider              │
-│ │   └─ OpenAIRecognitionProvider            │
+│ │   ├─ ScriptedRecognitionProvider           │
+│ │   ├─ OpenCLIPRecognitionProvider           │
+│ │   └─ OpenAIRecognitionProvider             │
 │ ├─ FxRateProvider                           │
 │ ├─ RefundPolicyProvider                     │
 │ └─ AirportCatalogProvider                   │
@@ -92,11 +93,12 @@ RecognitionResult
 RecognitionService
        ↓
 RecognitionProvider protocol
-       ├─ MockRecognitionProvider
+       ├─ ScriptedRecognitionProvider
+       ├─ OpenCLIPRecognitionProvider
        └─ OpenAIRecognitionProvider
 ```
 
-이 구조를 사용하여 UI 병렬 작업 중에는 Mock Provider를 사용하고, 실제 시연에서는 OpenAI Provider로 전환한다.
+이 구조를 사용하여 UI 병렬 작업 중에는 Scripted Provider를 사용하고, 실제 시연에서는 OpenAI Provider로 전환한다.
 
 ## 4. Pricing 경계
 
@@ -132,13 +134,13 @@ SessionProduct
 
 추천을 위해 별도 LLM을 호출하지 않는다.
 
-## 6. Mock / Real 교체 구조
+## 6. Scripted / External 교체 구조
 
 2026-08-17 UI 병렬 작업 전까지 API 계약을 고정한다.
 
 ```text
-                  ┌─ MockRecognitionProvider
-API → Service ────┤
+                  ┌─ ScriptedRecognitionProvider
+API → Service ────┼─ OpenCLIPRecognitionProvider
                   └─ OpenAIRecognitionProvider
 
                   ┌─ FixedFxRateProvider

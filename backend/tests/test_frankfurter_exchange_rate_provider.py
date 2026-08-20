@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from decimal import Decimal
 
 import httpx
@@ -5,6 +6,17 @@ import pytest
 
 from app.providers.exchange_rates import ExchangeRateProviderError
 from app.providers.frankfurter import FrankfurterExchangeRateProvider
+
+
+class ScriptedTransport(httpx.BaseTransport):
+    def __init__(
+        self,
+        handler: Callable[[httpx.Request], httpx.Response],
+    ) -> None:
+        self._handler = handler
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        return self._handler(request)
 
 
 def test_frankfurter_fetches_usd_and_cny_in_one_request() -> None:
@@ -20,7 +32,7 @@ def test_frankfurter_fetches_usd_and_cny_in_one_request() -> None:
             ],
         )
 
-    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+    with httpx.Client(transport=ScriptedTransport(handler)) as client:
         usd_rate, cny_rate = FrankfurterExchangeRateProvider(
             base_url="https://frankfurter.test/v2",
             client=client,
@@ -46,7 +58,7 @@ def test_frankfurter_rejects_incomplete_rate_pair() -> None:
             ],
         )
 
-    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+    with httpx.Client(transport=ScriptedTransport(handler)) as client:
         provider = FrankfurterExchangeRateProvider(client=client)
         with pytest.raises(ExchangeRateProviderError):
             provider.fetch_rates()
@@ -56,7 +68,7 @@ def test_frankfurter_maps_http_failure_to_provider_error() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(503, request=request)
 
-    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+    with httpx.Client(transport=ScriptedTransport(handler)) as client:
         provider = FrankfurterExchangeRateProvider(client=client)
         with pytest.raises(ExchangeRateProviderError):
             provider.fetch_rates()

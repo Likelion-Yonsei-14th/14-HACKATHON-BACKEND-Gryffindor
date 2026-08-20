@@ -47,9 +47,9 @@ cp .env.example .env
 ```text
 RECOGNITION_PROVIDER=openclip
 # RECOGNITION_PROVIDER=openai
-# RECOGNITION_PROVIDER=mock
+# RECOGNITION_PROVIDER=scripted
 
-RECOGNITION_MAX_CANDIDATES=3
+RECOGNITION_MAX_CANDIDATES=8
 OPENCLIP_MATCH_THRESHOLD=0.62
 OPENCLIP_MARGIN_THRESHOLD=0.06
 ```
@@ -63,7 +63,7 @@ DB schema, production Store/catalog, reference embedding을 준비한다.
 .venv/bin/python -m app.scripts.index_product_embeddings
 ```
 
-Embedding index command는 로컬 `tests/fixtures/openai/`의 `demo_*_ref.jpg` 파일을 사용한다. Catalog나 reference image를 바꾸면 다시 실행한다.
+Embedding index command는 추적되는 `data/recognition_refs/<product_id>/`의 reference image를 사용한다. Catalog나 reference image를 바꾸면 다시 실행한다.
 
 ## 서버 실행
 
@@ -113,15 +113,15 @@ OPENAI_DOCUMENT_MODEL=gpt-5.6-luna
 OPENAI_RECOMMENDATION_MODEL=gpt-5.6-luna
 ```
 
-Android UI 상태만 검증할 때는 Mock을 사용한다.
+Android UI 상태만 검증할 때는 Scripted Provider를 사용한다.
 
 ```text
-RECOGNITION_PROVIDER=mock
+RECOGNITION_PROVIDER=scripted
 ```
 
 ## 테스트
 
-일반 테스트는 로컬 `.env`와 격리되어 Mock/Fake Provider만 사용한다.
+일반 테스트는 로컬 `.env`와 격리되어 scripted 또는 test 전용 Provider만 사용한다.
 
 ```bash
 cd backend

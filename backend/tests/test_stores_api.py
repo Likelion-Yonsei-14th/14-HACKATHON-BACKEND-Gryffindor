@@ -59,7 +59,7 @@ def test_list_stores_returns_production_stores_with_image_url(
     assert airport_store["airportCode"] == "ICN"
     assert airport_store["terminal"] == "T1"
     assert airport_store["latitude"] == 37.4602
-    assert airport_store["imageUrl"] is None
+    assert airport_store["imageUrl"]
 
 
 def test_nearby_stores_are_sorted_and_exclude_stores_without_coordinates(

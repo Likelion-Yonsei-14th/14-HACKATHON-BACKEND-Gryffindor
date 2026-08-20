@@ -18,6 +18,9 @@ DEFAULT_PRODUCT_IDS = (
     "anillo_fragrance_of_life_10_001",
     "hatchingroom_wavy_bag_mini_nylon_001",
     "zara_leather_tote_001",
+    "vivienne_westwood_wallet_5115002ew_001",
+    "dior_saddle_bloom_card_wallet_s5611ctzq_m928_001",
+    "dior_beauty_velvet_pouch_black_001",
 )
 SUPPORTED_REFERENCE_EXTENSIONS = frozenset({".jpg", ".jpeg", ".png"})
 
