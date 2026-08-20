@@ -11,6 +11,7 @@ from app.db.session import get_db_session
 from app.errors import AppError
 from app.models.personalization import Flight, Receipt, ReceiptItem
 from app.models.product import Product
+from app.models.shopping import SessionProduct
 from app.providers.documents import DocumentExtractionProvider
 from app.providers.openai_documents import OpenAIDocumentExtractionProvider
 from app.providers.openai_recommendation import OpenAIRecommendationProvider
@@ -253,14 +254,35 @@ def my_page(db: DbSession) -> MyPageResponse:
     service = PersonalizationService(db)
     user = service.user()
     purchases = service.list_purchases()
+
+    # Receipt-based purchased products
+    receipt_purchased = [
+        _purchased_product_response(purchase, item)
+        for purchase in purchases
+        for item in purchase.items
+    ]
+
+    # Collect product IDs already covered by receipts (for dedup)
+    receipt_product_ids: set[str] = set()
+    for purchase in purchases:
+        for item in purchase.items:
+            if item.product is not None:
+                receipt_product_ids.add(item.product.product_id)
+
+    # Session-based purchased products (deduplicated against receipts)
+    session_purchased = service.list_session_purchased_products()
+    for sp in session_purchased:
+        if sp.product.product_id in receipt_product_ids:
+            continue
+        receipt_product_ids.add(sp.product.product_id)  # prevent duplicates within sessions
+        receipt_purchased.append(
+            _session_purchased_product_response(sp)
+        )
+
     return MyPageResponse(
         user=UserResponse(id=user.id, name=user.name),
         wishlist=[_product_response(item.product) for item in service.list_wishlist()],
-        purchased_products=[
-            _purchased_product_response(purchase, item)
-            for purchase in purchases
-            for item in purchase.items
-        ],
+        purchased_products=receipt_purchased,
         flight=_optional_flight_response(service.latest_flight()),
         trips=[
             TripSummaryResponse(
@@ -343,6 +365,24 @@ def _purchased_product_response(
         currency=purchase.currency,
         store_name=purchase.store_name,
         purchased_at=purchase.purchased_at,
+    )
+
+
+def _session_purchased_product_response(
+    session_product: SessionProduct,
+) -> PurchasedProductResponse:
+    shopping_session = session_product.shopping_session
+    product = session_product.product
+    purchased_at = shopping_session.completed_at or shopping_session.started_at
+    return PurchasedProductResponse(
+        purchase_item_id=session_product.id,
+        product=_product_response(product),
+        fallback_product_name=None,
+        quantity=1,
+        price=product.retail_price_krw,
+        currency="KRW",
+        store_name=shopping_session.store.name if shopping_session.store else None,
+        purchased_at=purchased_at,
     )
 
 

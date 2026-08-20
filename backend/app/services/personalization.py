@@ -6,10 +6,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.constants import DEMO_USER_ID
-from app.domain.enums import RefundMethod
+from app.domain.enums import PurchaseState, RefundMethod
 from app.errors import AppError
 from app.models.personalization import Flight, Receipt, ReceiptItem, User, WishlistItem
 from app.models.product import Product
+from app.models.shopping import SessionProduct
 from app.providers.documents import (
     DocumentExtractionProvider,
     DocumentExtractionProviderError,
@@ -150,6 +151,16 @@ class PersonalizationService:
 
     def list_purchases(self) -> list[Receipt]:
         return self.list_receipts()
+
+    def list_session_purchased_products(self) -> list[SessionProduct]:
+        """Return SessionProducts with purchase_state == PURCHASED from recent sessions."""
+        from app.domain.enums import PurchaseState
+
+        all_session_products = self._personalization.list_recent_session_products(DEMO_USER_ID)
+        return [
+            sp for sp in all_session_products
+            if sp.purchase_state == PurchaseState.PURCHASED
+        ]
 
     def update_purchase_refund_method(
         self,

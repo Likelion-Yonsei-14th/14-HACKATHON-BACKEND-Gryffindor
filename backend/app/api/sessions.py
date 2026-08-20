@@ -32,6 +32,8 @@ from app.schemas.api import (
     SessionCreateRequest,
     SessionProductListResponse,
     SessionResponse,
+    SessionReviewRequest,
+    SessionReviewResponse,
 )
 from app.services.images import read_valid_image, save_recognition_debug_image
 from app.services.pricing import PriceQuote
@@ -138,6 +140,27 @@ def complete_session(
         session_id=shopping_session.id,
         status=shopping_session.status,
         completed_at=shopping_session.completed_at,
+    )
+
+
+@router.put(
+    "/sessions/{sessionId}/review",
+    response_model=SessionReviewResponse,
+    responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+)
+def submit_review(
+    session_id: Annotated[UUID, Path(alias="sessionId")],
+    payload: SessionReviewRequest,
+    db: DbSession,
+) -> SessionReviewResponse:
+    purchased, interested = ShoppingSessionService(db).submit_review(
+        session_id,
+        payload.purchased_product_ids,
+        payload.interested_product_ids,
+    )
+    return SessionReviewResponse(
+        purchased_product_ids=purchased,
+        interested_product_ids=interested,
     )
 
 

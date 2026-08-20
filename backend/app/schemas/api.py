@@ -73,6 +73,16 @@ class SessionCompleteResponse(ApiModel):
     completed_at: datetime
 
 
+class SessionReviewRequest(ApiModel):
+    purchased_product_ids: list[str] = Field(default_factory=list)
+    interested_product_ids: list[str] = Field(default_factory=list)
+
+
+class SessionReviewResponse(ApiModel):
+    purchased_product_ids: list[str]
+    interested_product_ids: list[str]
+
+
 class ProductResponse(ApiModel):
     product_id: str
     sku: str

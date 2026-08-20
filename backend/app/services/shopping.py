@@ -3,11 +3,14 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.domain.enums import RecognitionStatus, SessionStatus, TriggerType
+from app.constants import DEMO_USER_ID
+from app.domain.enums import PurchaseState, RecognitionStatus, SessionStatus, TriggerType
 from app.errors import AppError
 from app.models.common import utc_now
+from app.models.personalization import WishlistItem
 from app.models.product import Product
 from app.models.shopping import SessionProduct, ShoppingSession
 from app.providers.recognition import (
@@ -16,6 +19,7 @@ from app.providers.recognition import (
     RecognitionProviderError,
     RecognitionTelemetry,
 )
+from app.repositories.personalization import PersonalizationRepository
 from app.repositories.products import ProductRepository
 from app.repositories.shopping import SessionProductRepository, ShoppingSessionRepository
 from app.repositories.stores import StoreRepository
@@ -70,6 +74,79 @@ class ShoppingSessionService:
         if shopping_session is None:
             raise AppError(404, "SESSION_NOT_FOUND", "Shopping session was not found.")
         return shopping_session
+
+    def submit_review(
+        self,
+        session_id: UUID,
+        purchased_product_ids: list[str],
+        interested_product_ids: list[str],
+    ) -> tuple[list[str], list[str]]:
+        """Apply review selections to session products, add interested to wishlist."""
+        shopping_session = self.get(session_id)
+        session_products = self._session_products.list_for_session(session_id)
+
+        # Build lookup: public product_id → SessionProduct
+        sp_by_product_id: dict[str, SessionProduct] = {
+            sp.product.product_id: sp for sp in session_products
+        }
+
+        # Validate all incoming IDs exist in this session
+        all_requested = set(purchased_product_ids) | set(interested_product_ids)
+        invalid_ids = all_requested - set(sp_by_product_id.keys())
+        if invalid_ids:
+            raise AppError(
+                422,
+                "INVALID_PRODUCT_IDS",
+                f"Product IDs not found in this session: {sorted(invalid_ids)}",
+            )
+
+        # Enforce mutual exclusivity: purchased wins over interested
+        purchased_set = set(purchased_product_ids)
+        interested_set = set(interested_product_ids) - purchased_set
+
+        # Reset all, then apply selections
+        for product_id, sp in sp_by_product_id.items():
+            if product_id in purchased_set:
+                sp.purchase_state = PurchaseState.PURCHASED
+                sp.interested = False
+            elif product_id in interested_set:
+                sp.purchase_state = PurchaseState.UNSET
+                sp.interested = True
+            else:
+                sp.purchase_state = PurchaseState.UNSET
+                sp.interested = False
+
+        # Add interested products to wishlist
+        personalization = PersonalizationRepository(self._db)
+        for product_id in interested_set:
+            sp = sp_by_product_id[product_id]
+            existing = personalization.get_wishlist_item(
+                shopping_session.user_id, sp.product_id
+            )
+            if existing is None:
+                personalization.add_wishlist_item(
+                    WishlistItem(
+                        user_id=shopping_session.user_id,
+                        product_id=sp.product_id,
+                    )
+                )
+                try:
+                    self._db.flush()
+                except IntegrityError:
+                    self._db.rollback()
+
+        self._db.commit()
+
+        # Return the final state
+        final_purchased = sorted(
+            pid for pid, sp in sp_by_product_id.items()
+            if sp.purchase_state == PurchaseState.PURCHASED
+        )
+        final_interested = sorted(
+            pid for pid, sp in sp_by_product_id.items()
+            if sp.interested
+        )
+        return final_purchased, final_interested
 
 
 class RecognitionService:
