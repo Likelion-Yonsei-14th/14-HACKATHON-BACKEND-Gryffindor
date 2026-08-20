@@ -54,10 +54,11 @@ OPENCLIP_MATCH_THRESHOLD=0.62
 OPENCLIP_MARGIN_THRESHOLD=0.06
 ```
 
-DB schema, demo catalog, reference embedding을 준비한다.
+DB schema, production Store/catalog, reference embedding을 준비한다.
 
 ```bash
 .venv/bin/alembic upgrade head
+.venv/bin/python -m app.scripts.seed_stores
 .venv/bin/python -m app.scripts.seed_products
 .venv/bin/python -m app.scripts.index_product_embeddings
 ```

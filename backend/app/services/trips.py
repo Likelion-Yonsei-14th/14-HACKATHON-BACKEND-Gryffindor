@@ -78,7 +78,7 @@ class TripService:
 
     def list_store_wishlist_products(self, store_id: UUID) -> list[Product]:
         self._require_user()
-        if self._stores.get(store_id) is None:
+        if self._stores.get_active(store_id) is None:
             raise AppError(404, "STORE_NOT_FOUND", "Store was not found.")
         return [
             item.product
@@ -97,7 +97,7 @@ class TripService:
         product_ids: list[str],
     ) -> VisitReservation:
         trip = self.get_trip(trip_id)
-        store = self._stores.get_with_products(store_id)
+        store = self._stores.get_active_with_products(store_id)
         if store is None:
             raise AppError(404, "STORE_NOT_FOUND", "Store was not found.")
 

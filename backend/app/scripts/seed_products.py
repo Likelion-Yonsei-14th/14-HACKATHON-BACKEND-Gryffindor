@@ -34,7 +34,7 @@ def seed_products(db: Session, seed_path: Path = DEFAULT_SEED_PATH) -> int:
     raw_products = json.loads(seed_path.read_text(encoding="utf-8"))
     products = TypeAdapter(list[ProductSeed]).validate_python(raw_products)
 
-    all_store_ids = list(db.scalars(select(Store.id).order_by(Store.id)).all())
+    all_store_ids = set(db.scalars(select(Store.id).order_by(Store.id)).all())
     for seed in products:
         product = db.scalar(select(Product).where(Product.product_id == seed.product_id))
         if product is None:
@@ -52,11 +52,23 @@ def seed_products(db: Session, seed_path: Path = DEFAULT_SEED_PATH) -> int:
         product.metadata_json = seed.metadata_json
         db.flush()
 
-        for store_id in seed.store_ids if seed.store_ids is not None else all_store_ids:
-            if db.get(Store, store_id) is None:
-                raise ValueError(f"Product seed references unknown store: {store_id}")
-            if db.get(StoreProduct, (store_id, product.id)) is None:
-                db.add(StoreProduct(store_id=store_id, product_id=product.id))
+        desired_store_ids = set(seed.store_ids) if seed.store_ids is not None else all_store_ids
+        unknown_store_ids = desired_store_ids - all_store_ids
+        if unknown_store_ids:
+            unknown_store_id = min(unknown_store_ids, key=str)
+            raise ValueError(f"Product seed references unknown store: {unknown_store_id}")
+
+        current_mappings = list(
+            db.scalars(select(StoreProduct).where(StoreProduct.product_id == product.id)).all()
+        )
+        current_store_ids = {mapping.store_id for mapping in current_mappings}
+
+        for mapping in current_mappings:
+            if mapping.store_id not in desired_store_ids:
+                db.delete(mapping)
+
+        for store_id in desired_store_ids - current_store_ids:
+            db.add(StoreProduct(store_id=store_id, product_id=product.id))
 
     db.commit()
     return len(products)

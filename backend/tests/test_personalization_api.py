@@ -24,6 +24,7 @@ from app.models.personalization import (
 )
 from app.models.product import Product
 from app.models.shopping import SessionProduct, ShoppingSession
+from app.models.store import Store
 from app.providers.documents import (
     DocumentExtractionProviderError,
     FlightExtraction,
@@ -439,10 +440,37 @@ def test_recommendation_context_contains_all_history_and_only_db_candidates(
     db_session: Session,
 ) -> None:
     _seed_recommendation_history(db_session)
-    airport_store_id = UUID("10000000-0000-0000-0000-000000000003")
+    airport_store_id = UUID("10000000-0000-0000-0000-000000000008")
+    airport_store = db_session.get(Store, airport_store_id)
+    assert airport_store is not None
+    airport_store.image_url = "https://cdn.example.test/stores/mcm-airport.jpg"
+    history_store_id = UUID("10000000-0000-0000-0000-000000000001")
+    history_store = db_session.get(Store, history_store_id)
+    assert history_store is not None
+    history_store.is_active = False
+    inactive_store_id = UUID("10000000-0000-0000-0000-000000000003")
+    inactive_store = Store(
+        id=inactive_store_id,
+        name="MCM Airport Store",
+        brand="MCM",
+        country="KR",
+        city="Incheon",
+        type="AIRPORT",
+        airport_code="ICN",
+        is_active=False,
+    )
+    candidate_product = db_session.scalar(
+        select(Product).where(Product.product_id == "mcm_eau_de_parfum_50_001")
+    )
+    assert candidate_product is not None
+    db_session.add(inactive_store)
+    db_session.flush()
+    db_session.add(StoreProduct(store_id=inactive_store.id, product_id=candidate_product.id))
+    db_session.commit()
 
     def valid_decision(context: RecommendationContext) -> RecommendationDecision:
         assert context.candidate_stores[0].store_id == airport_store_id
+        assert inactive_store_id not in {store.store_id for store in context.candidate_stores}
         return RecommendationDecision(
             stores=[
                 RecommendationStoreDecision(
@@ -450,7 +478,7 @@ def test_recommendation_context_contains_all_history_and_only_db_candidates(
                     reason="출국 전에 방문하기 편리합니다.",
                     products=[
                         RecommendationProductDecision(
-                            product_id="demo_perfume_001",
+                            product_id="mcm_eau_de_parfum_50_001",
                             reason="스마트글래스로 여러 번 본 상품입니다.",
                         )
                     ],
@@ -468,6 +496,7 @@ def test_recommendation_context_contains_all_history_and_only_db_candidates(
     assert context.wishlist_product_ids == ["test_outer_001"]
     assert context.viewed_products[0].product_id == "demo_perfume_001"
     assert context.viewed_products[0].observation_count == 3
+    assert context.viewed_products[0].store_ids == [history_store_id]
     assert context.purchased_product_ids == ["demo_mouse_001"]
     matched_purchase = next(
         item for item in context.purchased_products if item.product_id == "demo_mouse_001"
@@ -485,8 +514,11 @@ def test_recommendation_context_contains_all_history_and_only_db_candidates(
     assert "demo_mouse_001" not in candidate_ids
     assert all(set(store.product_ids) <= candidate_ids for store in context.candidate_stores)
     assert response.json()["stores"][0]["storeId"] == str(airport_store_id)
+    assert response.json()["stores"][0]["imageUrl"] == (
+        "https://cdn.example.test/stores/mcm-airport.jpg"
+    )
     assert response.json()["stores"][0]["products"][0]["product"]["productId"] == (
-        "demo_perfume_001"
+        "mcm_eau_de_parfum_50_001"
     )
 
 
@@ -498,8 +530,10 @@ def test_recommendation_allowlist_removes_invalid_results(
     db_session: Session,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    store_id = UUID("10000000-0000-0000-0000-000000000001")
-    product = db_session.scalar(select(Product).where(Product.product_id == "demo_perfume_001"))
+    store_id = UUID("10000000-0000-0000-0000-000000000005")
+    product = db_session.scalar(
+        select(Product).where(Product.product_id == "mcm_eau_de_parfum_50_001")
+    )
     assert product is not None
     if invalid_kind == "relationship":
         relation = db_session.get(StoreProduct, (store_id, product.id))

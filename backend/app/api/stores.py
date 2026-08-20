@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -29,6 +29,7 @@ def list_stores(db: DbSession) -> StoreListResponse:
                 longitude=store.longitude,
                 terminal=store.terminal,
                 opening_hours=store.opening_hours,
+                image_url=store.image_url,
             )
             for store in stores
         ]
@@ -48,11 +49,12 @@ def list_nearby_stores(
             name=store.name,
             type=store.type,
             address=store.address,
-            latitude=store.latitude,
-            longitude=store.longitude,
+            latitude=cast(float, store.latitude),
+            longitude=cast(float, store.longitude),
             distance_km=distance,
             airport_code=store.airport_code,
             terminal=store.terminal,
+            image_url=store.image_url,
         )
         for store, distance in StoreService(db).list_nearby_stores(latitude, longitude, limit)
     ]

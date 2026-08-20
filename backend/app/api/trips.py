@@ -310,6 +310,7 @@ def _reservation_response(reservation: VisitReservation) -> VisitReservationResp
         store=ReservationStoreResponse(
             store_id=reservation.store.id,
             name=reservation.store.name,
+            image_url=reservation.store.image_url,
         ),
         scheduled_at=reservation.scheduled_at,
         products=[
@@ -361,6 +362,7 @@ def _feed_recommendations(result: RecommendationResult) -> list[FeedRecommendati
                     distance_from_hotel_km=recommended_store.distance_from_hotel_km,
                     airport_code=recommended_store.store.airport_code,
                     terminal=recommended_store.store.terminal,
+                    image_url=recommended_store.store.image_url,
                     has_wishlist_items=recommended_store.has_wishlist_items,
                     reason=recommended_store.reason,
                 )

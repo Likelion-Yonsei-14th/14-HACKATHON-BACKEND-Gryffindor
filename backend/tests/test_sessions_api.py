@@ -17,6 +17,7 @@ from app.core.config import Settings, get_settings
 from app.domain.enums import RecognitionStatus
 from app.models.currency_rate import CurrencyRate
 from app.models.shopping import SessionProduct, ShoppingSession
+from app.models.store import Store
 from app.providers.mock_recognition import MockRecognitionProvider
 from app.providers.recognition import (
     RecognitionCandidate,
@@ -214,6 +215,24 @@ def test_create_session_rejects_unknown_store(client: TestClient) -> None:
             "message": "Store was not found.",
         }
     }
+
+
+def test_create_session_rejects_inactive_store(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    store = db_session.get(Store, UUID(get_demo_store_id(client)))
+    assert store is not None
+    store.is_active = False
+    db_session.commit()
+
+    response = client.post(
+        "/api/v1/sessions",
+        json={"currency": "CNY", "storeId": str(store.id)},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "STORE_NOT_FOUND"
 
 
 def test_create_session_requires_store_id(client: TestClient) -> None:

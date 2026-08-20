@@ -1,5 +1,120 @@
 [
   {
+    "productId": "mcm_stark_backpack_001",
+    "sku": "MMKGSVE034B001",
+    "brand": "MCM",
+    "name": "Stark 사이드 스터드 비세토스 백팩 S",
+    "category": "bag",
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MMKGSVE034B001_01/stark-cinnamon-s?$w1000$&fmt=auto&qlt=default",
+    "priceKrw": 1650000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": false,
+    "metadata": {
+      "productionCatalog": true,
+      "source": "MCM Korea official",
+      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EB%82%A8%EC%84%B1/%EA%B0%80%EB%B0%A9/%EB%B0%B1%ED%8C%A9/stark-%EC%82%AC%EC%9D%B4%EB%93%9C-%EC%8A%A4%ED%84%B0%EB%93%9C-%EB%B9%84%EC%84%B8%ED%86%A0%EC%8A%A4-%EB%B0%B1%ED%8C%A9/MMKGSVE034B001.html",
+      "priceBasis": "MCM Korea official retail list price; duty-free selling price not verified",
+      "inventoryNote": "Demo mapping to both selected MCM duty-free stores; live stock not verified",
+      "imageFileSuggestion": "mcm-stark-backpack-MMKGSVE034B001.jpg"
+    },
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000005",
+      "10000000-0000-0000-0000-000000000008"
+    ]
+  },
+  {
+    "productId": "mcm_aren_tote_001",
+    "sku": "MMTGSTA04BK001",
+    "brand": "MCM",
+    "name": "Aren 비세토스 N/S 토트 미니",
+    "category": "bag",
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MMTGSTA04BK001_01/aren-n-s-black-?$w1000$&fmt=auto&qlt=default",
+    "priceKrw": 1050000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": false,
+    "metadata": {
+      "productionCatalog": true,
+      "source": "MCM Korea official",
+      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EB%82%A8%EC%84%B1/%EA%B0%80%EB%B0%A9/%ED%86%A0%ED%8A%B8%EB%B0%B1/aren-%EB%B9%84%EC%84%B8%ED%86%A0%EC%8A%A4-n%2Fs-%ED%86%A0%ED%8A%B8/MMTGSTA04BK001.html",
+      "priceBasis": "MCM Korea official retail list price; duty-free selling price not verified",
+      "inventoryNote": "Demo mapping to both selected MCM duty-free stores; live stock not verified",
+      "imageFileSuggestion": "mcm-aren-tote-MMTGSTA04BK001.jpg"
+    },
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000005",
+      "10000000-0000-0000-0000-000000000008"
+    ]
+  },
+  {
+    "productId": "mcm_stark_charm_001",
+    "sku": "MXZGATA19BK001",
+    "brand": "MCM",
+    "name": "모노그램 프린트 레더 2D Stark 비세토스 백팩 참",
+    "category": "accessory",
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MXZGATA19BK001_01/-2d-stark-black-?$w1000$&fmt=auto&qlt=default",
+    "priceKrw": 290000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": false,
+    "metadata": {
+      "productionCatalog": true,
+      "source": "MCM Korea official",
+      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EB%82%A8%EC%84%B1/%ED%8C%A8%EC%85%98%EC%86%8C%ED%92%88/%EB%AA%A8%EB%91%90%EB%B3%B4%EA%B8%B0/%EB%AA%A8%EB%85%B8%EA%B7%B8%EB%9E%A8-%ED%94%84%EB%A6%B0%ED%8A%B8-%EB%A0%88%EB%8D%94-2d-stark-%EB%B9%84%EC%84%B8%ED%86%A0%EC%8A%A4-%EB%B0%B1%ED%8C%A9-%EC%B0%B8-/MXZGATA19BK001.html",
+      "priceBasis": "MCM Korea official retail list price; duty-free selling price not verified",
+      "inventoryNote": "Official item includes a key-ring clasp",
+      "imageFileSuggestion": "mcm-stark-charm-MXZGATA19BK001.jpg"
+    },
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000005",
+      "10000000-0000-0000-0000-000000000008"
+    ]
+  },
+  {
+    "productId": "mcm_eau_de_parfum_50_001",
+    "sku": "MPFBSMM02CO001",
+    "brand": "MCM",
+    "name": "MCM 오 드 퍼퓸 50ml",
+    "category": "perfume",
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MPFBSMM02CO001_02/mcm-cognac-50ml?$w1000$&fmt=auto&qlt=default",
+    "priceKrw": 118000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": false,
+    "metadata": {
+      "productionCatalog": true,
+      "source": "MCM Korea official",
+      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%8C%A8%EC%85%98%EC%86%8C%ED%92%88/%ED%96%A5%EC%88%98/mcm-%EC%98%A4-%EB%93%9C-%ED%8D%BC%ED%93%B8/MPFBSMM02CO001.html",
+      "priceBasis": "MCM Korea official retail list price; duty-free selling price not verified",
+      "inventoryNote": "Demo mapping to both selected MCM duty-free stores; live stock not verified",
+      "imageFileSuggestion": "mcm-edp-50ml-MPFBSMM02CO001.jpg"
+    },
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000005",
+      "10000000-0000-0000-0000-000000000008"
+    ]
+  },
+  {
+    "productId": "mcm_diamond_eau_de_parfum_50_001",
+    "sku": "MPFEAMM06BK001",
+    "brand": "MCM",
+    "name": "Diamond 오 드 퍼퓸 50ml",
+    "category": "perfume",
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MPFEAMM06BK001_02/diamond-black-50ml?$w1000$&fmt=auto&qlt=default",
+    "priceKrw": 121000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": false,
+    "metadata": {
+      "productionCatalog": true,
+      "source": "MCM Korea official",
+      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%8C%A8%EC%85%98%EC%86%8C%ED%92%88/%ED%96%A5%EC%88%98/diamond-%EC%98%A4-%EB%93%9C-%ED%8D%BC%ED%93%B8/MPFEAMM06BK001.html",
+      "priceBasis": "MCM Korea official retail list price; duty-free selling price not verified",
+      "inventoryNote": "Demo mapping to both selected MCM duty-free stores; live stock not verified",
+      "imageFileSuggestion": "mcm-diamond-edp-50ml-MPFEAMM06BK001.jpg"
+    },
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000005",
+      "10000000-0000-0000-0000-000000000008"
+    ]
+  },
+  {
     "productId": "test_outer_001",
     "sku": "MUSINSA-5477019",
     "brand": "HAVE HAD",
@@ -14,7 +129,8 @@
       "recognitionTest": true,
       "source": "musinsa",
       "musinsaProductId": "5477019"
-    }
+    },
+    "storeIds": []
   },
   {
     "productId": "test_outer_002",
@@ -31,7 +147,8 @@
       "recognitionTest": true,
       "source": "musinsa",
       "musinsaProductId": "2713777"
-    }
+    },
+    "storeIds": []
   },
   {
     "productId": "test_outer_003",
@@ -48,7 +165,8 @@
       "recognitionTest": true,
       "source": "musinsa",
       "musinsaProductId": "4347271"
-    }
+    },
+    "storeIds": []
   },
   {
     "productId": "demo_mouse_001",
@@ -66,7 +184,8 @@
       "recognitionTest": true,
       "source": "wikimedia-commons",
       "license": "CC-BY-4.0"
-    }
+    },
+    "storeIds": []
   },
   {
     "productId": "demo_perfume_001",
@@ -83,7 +202,8 @@
       "a4Demo": true,
       "recognitionTest": true,
       "source": "kingpower"
-    }
+    },
+    "storeIds": []
   },
   {
     "productId": "demo_lotion_001",
@@ -100,7 +220,8 @@
       "a4Demo": true,
       "recognitionTest": true,
       "source": "oliveyoung"
-    }
+    },
+    "storeIds": []
   },
   {
     "productId": "demo_bag_001",
@@ -117,10 +238,7 @@
       "b6Demo": true,
       "description": "도시 여행에 어울리는 구조적인 블랙 백팩"
     },
-    "storeIds": [
-      "10000000-0000-0000-0000-000000000004",
-      "10000000-0000-0000-0000-000000000006"
-    ]
+    "storeIds": []
   },
   {
     "productId": "demo_bag_002",
@@ -137,11 +255,7 @@
       "b6Demo": true,
       "description": "가볍게 들 수 있는 미니 사이즈 토트백"
     },
-    "storeIds": [
-      "10000000-0000-0000-0000-000000000005",
-      "10000000-0000-0000-0000-000000000006",
-      "10000000-0000-0000-0000-000000000008"
-    ]
+    "storeIds": []
   },
   {
     "productId": "demo_bag_003",
@@ -158,11 +272,7 @@
       "b6Demo": true,
       "description": "여행 중 손이 자유로운 클래식 크로스바디백"
     },
-    "storeIds": [
-      "10000000-0000-0000-0000-000000000004",
-      "10000000-0000-0000-0000-000000000005",
-      "10000000-0000-0000-0000-000000000009"
-    ]
+    "storeIds": []
   },
   {
     "productId": "demo_perfume_002",
@@ -179,11 +289,7 @@
       "b6Demo": true,
       "description": "우디 앰버 계열의 데모 오 드 퍼퓸"
     },
-    "storeIds": [
-      "10000000-0000-0000-0000-000000000007",
-      "10000000-0000-0000-0000-000000000009",
-      "10000000-0000-0000-0000-000000000010"
-    ]
+    "storeIds": []
   },
   {
     "productId": "demo_perfume_003",
@@ -200,10 +306,7 @@
       "b6Demo": true,
       "description": "플로럴 머스크 계열의 데모 오 드 퍼퓸"
     },
-    "storeIds": [
-      "10000000-0000-0000-0000-000000000008",
-      "10000000-0000-0000-0000-000000000009"
-    ]
+    "storeIds": []
   },
   {
     "productId": "demo_perfume_004",
@@ -220,9 +323,81 @@
       "b6Demo": true,
       "description": "시더우드와 시트러스가 어우러진 여행용 향수"
     },
-    "storeIds": [
-      "10000000-0000-0000-0000-000000000007",
-      "10000000-0000-0000-0000-000000000010"
-    ]
+    "storeIds": []
+  },
+  {
+    "productId": "mcm_001",
+    "sku": "MCM-MOCK-001",
+    "brand": "MCM",
+    "name": "Mock Stark Backpack",
+    "category": "bag",
+    "imageUrl": "https://example.com/products/mcm_001.jpg",
+    "priceKrw": 1090000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true
+    },
+    "storeIds": []
+  },
+  {
+    "productId": "mcm_002",
+    "sku": "MCM-MOCK-002",
+    "brand": "MCM",
+    "name": "Mock Aren Shoulder Bag",
+    "category": "bag",
+    "imageUrl": "https://example.com/products/mcm_002.jpg",
+    "priceKrw": 890000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true
+    },
+    "storeIds": []
+  },
+  {
+    "productId": "mcm_003",
+    "sku": "MCM-MOCK-003",
+    "brand": "MCM",
+    "name": "Mock Visetos Wallet",
+    "category": "wallet",
+    "imageUrl": "https://example.com/products/mcm_003.jpg",
+    "priceKrw": 390000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true
+    },
+    "storeIds": []
+  },
+  {
+    "productId": "mcm_004",
+    "sku": "MCM-MOCK-004",
+    "brand": "MCM",
+    "name": "Mock Liz Shopper",
+    "category": "tote",
+    "imageUrl": "https://example.com/products/mcm_004.jpg",
+    "priceKrw": 950000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true
+    },
+    "storeIds": []
+  },
+  {
+    "productId": "mcm_005",
+    "sku": "MCM-MOCK-005",
+    "brand": "MCM",
+    "name": "Mock Claus Card Case",
+    "category": "card_case",
+    "imageUrl": "https://example.com/products/mcm_005.jpg",
+    "priceKrw": 290000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": true,
+    "metadata": {
+      "demo": true
+    },
+    "storeIds": []
   }
 ]

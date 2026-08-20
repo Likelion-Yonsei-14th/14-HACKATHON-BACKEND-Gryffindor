@@ -233,6 +233,7 @@ async def recommendations(
             RecommendationStoreResponse(
                 store_id=recommended_store.store.id,
                 name=recommended_store.store.name,
+                image_url=recommended_store.store.image_url,
                 reason=recommended_store.reason,
                 products=[
                     RecommendationProductResponse(

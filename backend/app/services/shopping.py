@@ -43,7 +43,7 @@ class ShoppingSessionService:
         self._pricing = PricingService(ExchangeRateService(db))
 
     def create(self, currency: str, store_id: UUID) -> ShoppingSession:
-        store = self._stores.get(store_id)
+        store = self._stores.get_active(store_id)
         if store is None:
             raise AppError(404, "STORE_NOT_FOUND", "Store was not found.")
         shopping_session = self._sessions.add(ShoppingSession(currency=currency, store_id=store.id))

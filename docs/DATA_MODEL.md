@@ -58,10 +58,20 @@ stores
 - city VARCHAR
 - type VARCHAR
 - airport_code VARCHAR NULL
+- image_url TEXT NULL
+- is_active BOOLEAN / NOT NULL / DEFAULT TRUE
 ```
 
-`type`은 현재 demo에서 `CITY`, `AIRPORT`를 사용한다. 공항 매장은 `airport_code`를
-사용하며 일반 매장은 `NULL`일 수 있다.
+production Store는 `DEPARTMENT_STORE`, `DUTY_FREE` type을 사용한다. 보존된 legacy Store는
+기존 `CITY`, `AIRPORT` 값을 유지할 수 있다. 공항 매장은 `airport_code`를 사용하며 일반
+매장은 `NULL`일 수 있다.
+
+`is_active`는 새 Store 목록, nearby, 추천, 세션/방문예약 선택 후보를 제어한다. 기본값과
+server default는 모두 `TRUE`이며 기존 row도 migration 시 `TRUE`로 채운다. 과거 history/FK를
+보존해야 하는 legacy Store UUID `10000000-0000-0000-0000-000000000002`,
+`10000000-0000-0000-0000-000000000003`만 migration에서 `FALSE`로 전환하고 삭제하지 않는다.
+기존 Shopping Session과 Visit Reservation의 Store 관계 조회에는 active filter를 적용하지
+않는다.
 
 ## 4. shopping_sessions
 
@@ -126,10 +136,13 @@ travel_plans
 Demo 매장은 `data/stores.seed.json`, 시연 상품은 `data/products.seed.json` 형태로
 관리하고 각각의 seed command로 DB에 입력한다.
 
-Store seed에는 Android E2E용 `MCM Seoul`, `MCM New York`, `MCM Airport Store`를
-포함한다.
+Store seed는 브랜드와 실제 지점의 조합마다 하나의 Store를 두며, 현재 백화점 2개와
+면세점 6개를 관리한다. 확인된 direct image URL이 없는 Store의 `image_url`은 `NULL`이다.
 
 ### Product Seed
+
+실제 Store inventory에는 production MCM 상품만 연결한다. Recognition 및 과거 회귀 검증에
+필요한 legacy Product row는 보존하되 `storeIds: []`로 StoreProduct 관계에서 분리한다.
 
 예:
 
@@ -283,6 +296,9 @@ stores
 + terminal VARCHAR NULL
 + opening_hours TEXT NULL
 ```
+
+Store 이미지 URL은 별도 nullable `image_url TEXT` 컬럼에 저장한다. 기존 Store row와의
+호환성을 위해 값이 없는 매장은 `NULL`을 유지한다.
 
 Store의 기존 `type`, `city`, `airport_code`를 재사용한다. 기존 seed row와 공개 ID는 유지하고,
 B6 seed는 `DEPARTMENT_STORE`, `DUTY_FREE` type을 사용한다.

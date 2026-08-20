@@ -10,7 +10,7 @@ class StoreService:
         self._stores = StoreRepository(db)
 
     def list_stores(self) -> list[Store]:
-        return self._stores.list_all()
+        return self._stores.list_active()
 
     def list_nearby_stores(
         self,
@@ -20,7 +20,7 @@ class StoreService:
     ) -> list[tuple[Store, float]]:
         nearby_stores = [
             (store, distance)
-            for store in self._stores.list_all()
+            for store in self._stores.list_active()
             if (
                 distance := haversine_distance_km(
                     latitude,

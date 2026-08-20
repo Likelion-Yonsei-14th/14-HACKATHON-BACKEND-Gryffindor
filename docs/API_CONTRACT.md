@@ -24,6 +24,9 @@
 
 ## 3. Store Catalog
 
+Store catalog와 새 Store 선택/추천 후보에는 `is_active=true`인 Store만 포함한다. 비활성
+Store row는 기존 Shopping Session/Visit Reservation의 FK와 history 조회를 위해 유지한다.
+
 ### `GET /api/v1/stores`
 
 Response `200`:
@@ -33,12 +36,13 @@ Response `200`:
   "stores": [
     {
       "id": "10000000-0000-0000-0000-000000000001",
-      "name": "MCM Seoul",
-      "brand": "MCM",
+      "name": "Ferragamo 현대백화점 신촌점",
+      "brand": "Ferragamo",
       "country": "KR",
       "city": "Seoul",
-      "type": "CITY",
-      "airportCode": null
+      "type": "DEPARTMENT_STORE",
+      "airportCode": null,
+      "imageUrl": null
     }
   ]
 }
@@ -70,13 +74,15 @@ Response `200`:
     "longitude": 126.9813,
     "distanceKm": 0.53,
     "airportCode": null,
-    "terminal": null
+    "terminal": null,
+    "imageUrl": null
   }
 ]
 ```
 
-좌표가 없는 Store는 응답에서 제외한다. 현재 B6의 `DEPARTMENT_STORE`와 `DUTY_FREE`를 포함해
-기존 Store 전체를 대상으로 하며, 별도 `storeType` 필터는 제공하지 않는다.
+좌표가 없거나 비활성인 Store는 응답에서 제외한다. 현재 B6의 `DEPARTMENT_STORE`와
+`DUTY_FREE`를 포함해 활성 Store 전체를 대상으로 하며, 별도 `storeType` 필터는 제공하지
+않는다.
 
 ---
 
@@ -96,7 +102,7 @@ Request:
 `currency`는 사용자가 선택한 국가의 통화이며 미국은 `USD`, 중국은 `CNY`를 사용한다.
 Android는 가격 응답에 함께 포함되는 KRW 금액과 이 대상 통화 금액을 상단 토글로 전환한다.
 `storeId`는 `GET /api/v1/stores`에서 조회한 매장 UUID이며 필수다.
-존재하지 않는 UUID를 보내면 `404 STORE_NOT_FOUND`를 반환한다.
+존재하지 않거나 비활성인 UUID를 보내면 `404 STORE_NOT_FOUND`를 반환한다.
 
 Response `201`:
 
@@ -579,7 +585,8 @@ OpenAI에는 Wishlist, SessionProduct 관심 이력, 구매 상품, 최신 Fligh
 `store_products` 관계에서 만든 후보만 전달한다. Catalog에 매칭된 구매 상품은 exact product
 후보에서 제외한다. 매칭되지 않은 구매 상품은 OCR 상품명과 매장명만 취향 문맥으로 전달한다.
 OpenAI 결과의 Store/Product ID와 소속 관계를 다시 검증하고 유효하지 않은 항목은 응답에서
-제거한다.
+제거한다. Store 후보는 활성 Store로 제한하되 과거 비활성 Store에서 발생한 SessionProduct는
+관심 이력 문맥으로 계속 사용할 수 있다.
 
 Response `200`:
 
@@ -587,8 +594,9 @@ Response `200`:
 {
   "stores": [
     {
-      "storeId": "10000000-0000-0000-0000-000000000003",
-      "name": "MCM Airport Store",
+      "storeId": "10000000-0000-0000-0000-000000000008",
+      "name": "MCM 현대면세점 인천공항 T1",
+      "imageUrl": "https://example.com/store.jpg",
       "reason": "출국 전에 방문하기 편리한 매장입니다.",
       "products": [
         {
@@ -723,6 +731,7 @@ context에 포함한다. 둘 중 하나만 전달하거나 좌표 범위를 벗�
           "distanceFromHotelKm": 1.3,
           "airportCode": null,
           "terminal": null,
+          "imageUrl": null,
           "hasWishlistItems": true,
           "reason": "숙소에서 가깝고 관심 상품을 취급합니다."
         }
@@ -736,12 +745,13 @@ context에 포함한다. 둘 중 하나만 전달하거나 좌표 범위를 벗�
 match를 계산한 뒤 Product 최대 20개, Store 최대 10개만 provider에 전달한다. 현재 위치가
 제공되면 현재 위치 거리, Wishlist 상품 취급 여부, 숙소 거리, 출국 공항/터미널 순으로 Store
 우선순위를 확장한다. Provider 결과의 Store/Product ID와 StoreProduct 관계는 기존과 같이
-allowlist 검증한다.
+allowlist 검증한다. 이때 Store 후보는 활성 Store만 사용한다.
 
 ### Store Wishlist Intersection
 
 `GET /api/v1/me/stores/{storeId}/wishlist-products`는 Demo User Wishlist와 StoreProduct의
-교집합을 `[{"productId": "...", "name": "..."}]`로 반환한다.
+교집합을 `[{"productId": "...", "name": "..."}]`로 반환한다. 비활성 Store는 새 선택 후보로
+취급하지 않고 `404 STORE_NOT_FOUND`를 반환한다.
 
 ### Visit Reservation
 
@@ -753,20 +763,23 @@ DELETE /api/v1/me/visit-reservations/{reservationId}
 
 POST body는 `storeId`, timezone-aware `scheduledAt`, `productIds`를 받는다. `productIds`는 빈
 배열을 허용한다. 각 product는 Demo User Wishlist와 해당 Store의 StoreProduct에 모두 있어야
-하며, 아니면 `400 INVALID_RESERVATION_PRODUCTS`다. DELETE는 row를 지우지 않고 status를
+하며, 아니면 `400 INVALID_RESERVATION_PRODUCTS`다. 존재하지 않거나 비활성인 Store로 새
+예약을 생성하면 `404 STORE_NOT_FOUND`다. DELETE는 row를 지우지 않고 status를
 `CANCELLED`로 전환한 뒤 `204`를 반환한다.
 
 ```json
 {
   "id": "uuid",
   "tripId": "uuid",
-  "store": {"storeId": "uuid", "name": "Demo Store"},
+  "store": {"storeId": "uuid", "name": "Demo Store", "imageUrl": null},
   "scheduledAt": "2026-08-21T06:00:00Z",
   "products": [],
   "status": "RESERVED",
   "createdAt": "2026-08-19T00:00:00Z"
 }
 ```
+
+이미 생성된 예약과 Trip 상세는 Store가 이후 비활성화되어도 Store FK와 정보를 정상 반환한다.
 
 ### My Page 확장
 

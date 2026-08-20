@@ -135,6 +135,7 @@ class PersonalizationRepository:
         statement = (
             select(Store)
             .options(joinedload(Store.store_products).joinedload(StoreProduct.product))
+            .where(Store.is_active.is_(True))
             .order_by(Store.id)
         )
         return list(self._db.scalars(statement).unique().all())

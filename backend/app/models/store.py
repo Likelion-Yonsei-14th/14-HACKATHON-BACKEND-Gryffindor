@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import Float, String, Text, Uuid
+from sqlalchemy import Boolean, Float, String, Text, Uuid, true
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -29,6 +29,13 @@ class Store(Base):
     longitude: Mapped[float | None] = mapped_column(Float)
     terminal: Mapped[str | None] = mapped_column(String(100))
     opening_hours: Mapped[str | None] = mapped_column(Text)
+    image_url: Mapped[str | None] = mapped_column(Text)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default=true(),
+    )
 
     shopping_sessions: Mapped[list[ShoppingSession]] = relationship(back_populates="store")
     store_products: Mapped[list[StoreProduct]] = relationship(

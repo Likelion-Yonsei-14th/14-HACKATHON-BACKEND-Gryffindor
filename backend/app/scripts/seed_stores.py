@@ -26,6 +26,8 @@ class StoreSeed(BaseModel):
     longitude: float | None = Field(default=None, ge=-180, le=180)
     terminal: str | None = None
     opening_hours: str | None = Field(default=None, alias="openingHours")
+    image_url: str | None = Field(default=None, alias="imageUrl")
+    is_active: bool = Field(default=True, alias="isActive")
 
 
 def seed_stores(db: Session, seed_path: Path = DEFAULT_SEED_PATH) -> int:
@@ -49,6 +51,8 @@ def seed_stores(db: Session, seed_path: Path = DEFAULT_SEED_PATH) -> int:
         store.longitude = seed.longitude
         store.terminal = seed.terminal
         store.opening_hours = seed.opening_hours
+        store.image_url = seed.image_url
+        store.is_active = seed.is_active
 
     db.commit()
     return len(stores)

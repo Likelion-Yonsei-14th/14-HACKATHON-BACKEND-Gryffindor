@@ -47,6 +47,7 @@ class StoreResponse(ApiModel):
     longitude: float | None
     terminal: str | None
     opening_hours: str | None
+    image_url: str | None
 
 
 class StoreListResponse(ApiModel):
@@ -63,6 +64,7 @@ class NearbyStoreResponse(ApiModel):
     distance_km: float
     airport_code: str | None
     terminal: str | None
+    image_url: str | None
 
 
 class SessionCompleteResponse(ApiModel):
@@ -245,6 +247,7 @@ class RecommendationProductResponse(ApiModel):
 class RecommendationStoreResponse(ApiModel):
     store_id: UUID
     name: str
+    image_url: str | None
     reason: str
     products: list[RecommendationProductResponse]
 
@@ -363,6 +366,7 @@ class VisitReservationCreateRequest(ApiModel):
 class ReservationStoreResponse(ApiModel):
     store_id: UUID
     name: str
+    image_url: str | None
 
 
 class VisitReservationResponse(ApiModel):
@@ -400,6 +404,7 @@ class FeedStoreResponse(ApiModel):
     distance_from_hotel_km: float | None
     airport_code: str | None
     terminal: str | None
+    image_url: str | None
     has_wishlist_items: bool
     reason: str
 
