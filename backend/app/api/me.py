@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, Path, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Path, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
@@ -35,8 +35,10 @@ from app.schemas.api import (
     UserResponse,
     WishlistResponse,
 )
+from app.services.exchange_rates import ExchangeRateService
 from app.services.images import read_valid_image
 from app.services.personalization import PersonalizationService
+from app.services.pricing import PriceQuote, PricingService
 from app.services.recommendations import RecommendationService
 from app.services.trips import TripService
 
@@ -250,14 +252,23 @@ async def recommendations(
 
 
 @router.get("", response_model=MyPageResponse)
-def my_page(db: DbSession) -> MyPageResponse:
+def my_page(
+    db: DbSession,
+    currency: Annotated[str | None, Query()] = "USD",
+) -> MyPageResponse:
     service = PersonalizationService(db)
     user = service.user()
     purchases = service.list_purchases()
 
+    # Set up pricing service for currency conversion
+    target_currency = (currency or "USD").upper()
+    if target_currency not in ("USD", "CNY"):
+        target_currency = "USD"
+    pricing_service = PricingService(ExchangeRateService(db))
+
     # Receipt-based purchased products
     receipt_purchased = [
-        _purchased_product_response(purchase, item)
+        _purchased_product_response_with_pricing(purchase, item, pricing_service, target_currency)
         for purchase in purchases
         for item in purchase.items
     ]
@@ -276,7 +287,7 @@ def my_page(db: DbSession) -> MyPageResponse:
             continue
         receipt_product_ids.add(sp.product.product_id)  # prevent duplicates within sessions
         receipt_purchased.append(
-            _session_purchased_product_response(sp)
+            _session_purchased_product_response_with_pricing(sp, pricing_service, target_currency)
         )
 
     return MyPageResponse(
@@ -352,10 +363,20 @@ def _purchase_response(purchase: Receipt) -> PurchaseResponse:
     )
 
 
-def _purchased_product_response(
+def _purchased_product_response_with_pricing(
     purchase: Receipt,
     item: ReceiptItem,
+    pricing_service: PricingService,
+    target_currency: str,
 ) -> PurchasedProductResponse:
+    price_krw = item.price or 0
+    quote: PriceQuote | None = None
+    if price_krw > 0:
+        if item.product is not None:
+            quote = pricing_service.quote(item.product, target_currency)
+        else:
+            quote = pricing_service.quote_price(price_krw, target_currency)
+
     return PurchasedProductResponse(
         purchase_item_id=item.id,
         product=_product_response(item.product) if item.product is not None else None,
@@ -365,15 +386,24 @@ def _purchased_product_response(
         currency=purchase.currency,
         store_name=purchase.store_name,
         purchased_at=purchase.purchased_at,
+        estimated_refund_krw=quote.estimated_refund_krw if quote else None,
+        estimated_refund_price_krw=quote.estimated_refund_price_krw if quote else None,
+        converted_price=quote.converted_retail_price if quote else None,
+        converted_estimated_refund=quote.converted_estimated_refund if quote else None,
+        converted_estimated_refund_price=quote.converted_estimated_refund_price if quote else None,
+        converted_currency=target_currency if quote else None,
     )
 
 
-def _session_purchased_product_response(
+def _session_purchased_product_response_with_pricing(
     session_product: SessionProduct,
+    pricing_service: PricingService,
+    target_currency: str,
 ) -> PurchasedProductResponse:
     shopping_session = session_product.shopping_session
     product = session_product.product
     purchased_at = shopping_session.completed_at or shopping_session.started_at
+    quote = pricing_service.quote(product, target_currency)
     return PurchasedProductResponse(
         purchase_item_id=session_product.id,
         product=_product_response(product),
@@ -383,6 +413,12 @@ def _session_purchased_product_response(
         currency="KRW",
         store_name=shopping_session.store.name if shopping_session.store else None,
         purchased_at=purchased_at,
+        estimated_refund_krw=quote.estimated_refund_krw,
+        estimated_refund_price_krw=quote.estimated_refund_price_krw,
+        converted_price=quote.converted_retail_price,
+        converted_estimated_refund=quote.converted_estimated_refund,
+        converted_estimated_refund_price=quote.converted_estimated_refund_price,
+        converted_currency=target_currency,
     )
 
 

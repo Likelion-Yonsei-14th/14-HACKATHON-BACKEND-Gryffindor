@@ -60,7 +60,7 @@ def test_product_card_instant_refund_uses_strict_transaction_boundary(
     assert quote.instant_refund_eligible is expected
 
 
-def test_pricing_uses_zero_seed_refund_for_unsupported_product(
+def test_pricing_applies_demo_refund_when_seed_is_zero(
     db_session: Session,
 ) -> None:
     product = Product(
@@ -77,8 +77,9 @@ def test_pricing_uses_zero_seed_refund_for_unsupported_product(
 
     quote = PricingService(ExchangeRateService(db_session)).quote(product, "CNY")
 
-    assert quote.estimated_refund_krw == 0
-    assert quote.estimated_refund_price_krw == 100_000
+    # Demo refund: 7% of 100,000 = 7,000
+    assert quote.estimated_refund_krw == 7_000
+    assert quote.estimated_refund_price_krw == 93_000
     assert quote.instant_refund_eligible is False
 
 

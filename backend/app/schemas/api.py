@@ -247,6 +247,13 @@ class PurchasedProductResponse(ApiModel):
     currency: str | None
     store_name: str | None
     purchased_at: datetime | None
+    # Pricing fields (populated when currency query param is provided)
+    estimated_refund_krw: int | None = None
+    estimated_refund_price_krw: int | None = None
+    converted_price: Decimal | None = None
+    converted_estimated_refund: Decimal | None = None
+    converted_estimated_refund_price: Decimal | None = None
+    converted_currency: str | None = None
 
 
 class RecommendationProductResponse(ApiModel):

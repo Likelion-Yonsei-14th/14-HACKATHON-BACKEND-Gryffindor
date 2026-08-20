@@ -125,88 +125,13 @@
     "storeIds": []
   },
   {
-    "productId": "mcm_eau_de_parfum_50_001",
-    "sku": "MPFBSMM02CO001",
+    "productId": "mcm_aren_lambskin_shoulder_s_001",
+    "sku": "MWSGSTA05BW001",
     "brand": "MCM",
-    "name": "MCM 오 드 퍼퓸 50ml",
-    "category": "perfume",
-    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MPFBSMM02CO001_02/mcm-cognac-50ml?$w1000$&fmt=auto&qlt=default",
-    "priceKrw": 118000,
-    "estimatedRefundKrw": 0,
-    "taxRefundSupported": false,
-    "metadata": {
-      "productionCatalog": true,
-      "recognitionTest": false,
-      "recommendationCandidate": true,
-      "recommendationGroup": "fragrance",
-      "variant": "50ml",
-      "color": "Cognac",
-      "source": "MCM Korea official",
-      "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
-    },
-    "storeIds": [
-      "10000000-0000-0000-0000-000000000005",
-      "10000000-0000-0000-0000-000000000008"
-    ]
-  },
-  {
-    "productId": "mcm_cozy_cat_100_001",
-    "sku": "MPFGAMM02CO001",
-    "brand": "MCM",
-    "name": "Cozy Cat 오 드 퍼퓸 100ml",
-    "category": "perfume",
-    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MPFGAMM02CO001_01?$w1000$&fmt=auto&qlt=default",
-    "priceKrw": 210000,
-    "estimatedRefundKrw": 0,
-    "taxRefundSupported": false,
-    "metadata": {
-      "productionCatalog": true,
-      "recognitionTest": false,
-      "recommendationCandidate": true,
-      "recommendationGroup": "fragrance",
-      "variant": "100ml",
-      "color": "Cognac",
-      "source": "MCM Korea official",
-      "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
-    },
-    "storeIds": [
-      "10000000-0000-0000-0000-000000000005",
-      "10000000-0000-0000-0000-000000000008"
-    ]
-  },
-  {
-    "productId": "mcm_mighty_bear_100_001",
-    "sku": "MPFFSMM04CO001",
-    "brand": "MCM",
-    "name": "Mighty Bear 오 드 퍼퓸 100ml",
-    "category": "perfume",
-    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MPFFSMM04CO001_01?$w1000$&fmt=auto&qlt=default",
-    "priceKrw": 210000,
-    "estimatedRefundKrw": 0,
-    "taxRefundSupported": false,
-    "metadata": {
-      "productionCatalog": true,
-      "recognitionTest": false,
-      "recommendationCandidate": true,
-      "recommendationGroup": "fragrance",
-      "variant": "100ml",
-      "color": "Cognac",
-      "source": "MCM Korea official",
-      "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
-    },
-    "storeIds": [
-      "10000000-0000-0000-0000-000000000005",
-      "10000000-0000-0000-0000-000000000008"
-    ]
-  },
-  {
-    "productId": "mcm_aren_ew_shoulder_s_001",
-    "sku": "MWSGSTA02CO001",
-    "brand": "MCM",
-    "name": "Aren 비세토스 E/W 숄더백 S",
+    "name": "Aren 양가죽 숄더백",
     "category": "bag",
-    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MWSGSTA02CO001_01?$w1000$&fmt=auto&qlt=default",
-    "priceKrw": 1090000,
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MWSGSTA05BW001_01?fmt=auto&qlt=default",
+    "priceKrw": 2150000,
     "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
@@ -215,8 +140,9 @@
       "recommendationCandidate": true,
       "recommendationGroup": "bag",
       "size": "S",
-      "color": "Cognac",
+      "color": "Black and White",
       "source": "MCM Korea official",
+      "sourcePage": "http://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%95%B8%EB%93%9C%EB%B0%B1/%EC%88%84%EB%8D%94%EB%B0%B1-%ED%81%AC%EB%A1%9C%EC%8A%A4%EB%B0%B1/aren-%EC%96%91%EA%B0%80%EC%A3%BD-%EC%88%84%EB%8D%94%EB%B0%B1/MWSGSTA05BW001.html?cgid=women-bags-shoulder-crossbody-bags",
       "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
     },
     "storeIds": [
@@ -225,23 +151,24 @@
     ]
   },
   {
-    "productId": "mcm_diamond_shoulder_mini_001",
-    "sku": "MWRGAAK01BK001",
+    "productId": "mcm_cosmic_star_edp_75_001",
+    "sku": "MPFGSMM04WT001",
     "brand": "MCM",
-    "name": "Diamond 비세토스 레더 믹스 숄더백 Mini",
-    "category": "bag",
-    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MWRGAAK01BK001_01?$w1000$&fmt=auto&qlt=default",
-    "priceKrw": 930000,
+    "name": "코스믹 스타 오 드 퍼퓸 75ml",
+    "category": "perfume",
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MPFGSMM04WT001_01?fmt=auto&qlt=default",
+    "priceKrw": 141000,
     "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
       "productionCatalog": true,
       "recognitionTest": false,
       "recommendationCandidate": true,
-      "recommendationGroup": "bag",
-      "size": "Mini",
-      "color": "Black",
+      "recommendationGroup": "fragrance",
+      "variant": "75ml",
+      "color": "White",
       "source": "MCM Korea official",
+      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%8C%A8%EC%85%98%EC%86%8C%ED%92%88/%ED%96%A5%EC%88%98/%EC%BD%94%EC%8A%A4%EB%AF%B9-%EC%8A%A4%ED%83%80-%EC%98%A4-%EB%93%9C-%ED%8D%BC%ED%93%B8/MPFGSMM04WT001.html?cgid=women-accessories-fragrances",
       "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
     },
     "storeIds": [
@@ -250,12 +177,12 @@
     ]
   },
   {
-    "productId": "mcm_new_liz_shopper_m_001",
-    "sku": "MWPGALR01BK001",
+    "productId": "mcm_aren_maxi_monogram_leather_hobo_s_001",
+    "sku": "MWHESTA03BK001",
     "brand": "MCM",
-    "name": "New Liz 엠보스드 모노그램 레더 쇼퍼 M",
+    "name": "Aren 맥시 모노그램 레더 호보",
     "category": "bag",
-    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MWPGALR01BK001_01?$w1000$&fmt=auto&qlt=default",
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MWHESTA03BK001_01?fmt=auto&qlt=default",
     "priceKrw": 1490000,
     "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
@@ -264,9 +191,10 @@
       "recognitionTest": false,
       "recommendationCandidate": true,
       "recommendationGroup": "bag",
-      "size": "M",
+      "size": "S",
       "color": "Black",
       "source": "MCM Korea official",
+      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%95%B8%EB%93%9C%EB%B0%B1/%EC%88%84%EB%8D%94%EB%B0%B1-%ED%81%AC%EB%A1%9C%EC%8A%A4%EB%B0%B1/aren-%EB%A7%A5%EC%8B%9C-%EB%AA%A8%EB%85%B8%EA%B7%B8%EB%9E%A8-%EB%A0%88%EB%8D%94-%ED%98%B8%EB%B3%B4/MWHESTA03BK001.html?cgid=women-bags-shoulder-crossbody-bags&sz=336&start=0",
       "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
     },
     "storeIds": [
@@ -275,13 +203,13 @@
     ]
   },
   {
-    "productId": "mcm_pina_studded_tote_m_001",
-    "sku": "MWTGATA02CO001",
+    "productId": "mcm_aren_duo_hobo_maxi_visetos_calfskin_s_001",
+    "sku": "MWHGATA014B001",
     "brand": "MCM",
-    "name": "Pina 비세토스 스터드 장식 토트 M",
+    "name": "Aren 듀오 호보 맥시 비세토스와 카프스킨",
     "category": "bag",
-    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MWTGATA02CO001_01?$w1000$&fmt=auto&qlt=default",
-    "priceKrw": 1690000,
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MWHGATA014B001_01?fmt=auto&qlt=default",
+    "priceKrw": 1290000,
     "estimatedRefundKrw": 0,
     "taxRefundSupported": false,
     "metadata": {
@@ -289,9 +217,36 @@
       "recognitionTest": false,
       "recommendationCandidate": true,
       "recommendationGroup": "bag",
-      "size": "M",
+      "size": "S",
+      "color": "Cinnamon",
+      "source": "MCM Korea official",
+      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%95%B8%EB%93%9C%EB%B0%B1/%EC%88%84%EB%8D%94%EB%B0%B1-%ED%81%AC%EB%A1%9C%EC%8A%A4%EB%B0%B1/aren-%EB%93%80%EC%98%A4-%ED%98%B8%EB%B3%B4-%EB%A7%A5%EC%8B%9C-%EB%B9%84%EC%84%B8%ED%86%A0%EC%8A%A4%EC%99%80-%EC%B9%B4%ED%94%84%EC%8A%A4%ED%82%A8/MWHGATA014B001.html?cgid=women-bags-shoulder-crossbody-bags",
+      "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
+    },
+    "storeIds": [
+      "10000000-0000-0000-0000-000000000005",
+      "10000000-0000-0000-0000-000000000008"
+    ]
+  },
+  {
+    "productId": "mcm_jolly_rabbit_100_001",
+    "sku": "MPFFSMM05CO001",
+    "brand": "MCM",
+    "name": "졸리 레빗 오 드 퍼퓸 100ml",
+    "category": "perfume",
+    "imageUrl": "https://images.mcmworldwide.com/i/mcmworldwide/MPFFSMM05CO001_01?fmt=auto&qlt=default",
+    "priceKrw": 210000,
+    "estimatedRefundKrw": 0,
+    "taxRefundSupported": false,
+    "metadata": {
+      "productionCatalog": true,
+      "recognitionTest": false,
+      "recommendationCandidate": true,
+      "recommendationGroup": "fragrance",
+      "variant": "100ml",
       "color": "Cognac",
       "source": "MCM Korea official",
+      "sourcePage": "https://kr.mcmworldwide.com/ko_KR/%EC%97%AC%EC%84%B1/%ED%8C%A8%EC%85%98%EC%86%8C%ED%92%88/%ED%96%A5%EC%88%98/%EC%A1%B8%EB%A6%AC-%EB%A0%88%EB%B9%97-%EC%98%A4-%EB%93%9C-%ED%8D%BC%ED%93%B8/MPFFSMM05CO001.html?cgid=women-accessories-fragrances",
       "priceBasis": "MCM Korea retail price; duty-free selling price not verified"
     },
     "storeIds": [

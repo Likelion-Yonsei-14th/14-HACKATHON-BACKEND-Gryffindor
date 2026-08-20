@@ -4,6 +4,17 @@ from decimal import ROUND_HALF_UP, Decimal
 from app.models.product import Product
 from app.services.exchange_rates import ExchangeRateService, ExchangeRateUnavailableError
 
+# Demo refund policy: 7% estimated tax refund for all products.
+_DEMO_REFUND_RATE = Decimal("0.07")
+
+
+def calculate_demo_refund_krw(price_krw: int) -> int:
+    """Calculate the demo estimated refund amount (7% of retail price, rounded)."""
+    return int((Decimal(price_krw) * _DEMO_REFUND_RATE).quantize(
+        Decimal("1"),
+        rounding=ROUND_HALF_UP,
+    ))
+
 
 @dataclass(frozen=True, slots=True)
 class PriceQuote:
@@ -27,7 +38,12 @@ class PricingService:
         self._exchange_rates = exchange_rates
 
     def quote(self, product: Product, currency: str) -> PriceQuote:
-        estimated_refund_krw = product.estimated_refund_krw
+        # Use product's stored refund if non-zero; otherwise apply demo 7% rate.
+        stored_refund = product.estimated_refund_krw
+        estimated_refund_krw = (
+            stored_refund if stored_refund > 0
+            else calculate_demo_refund_krw(product.retail_price_krw)
+        )
         estimated_refund_price_krw = product.retail_price_krw - estimated_refund_krw
         try:
             fx_rate = self._exchange_rates.get_cached_rate(currency).rate
@@ -56,6 +72,39 @@ class PricingService:
                 product.tax_refund_supported
                 and product.retail_price_krw < self._INSTANT_REFUND_TRANSACTION_LIMIT_KRW
             ),
+        )
+
+    def quote_price(self, price_krw: int, currency: str) -> PriceQuote:
+        """Quote pricing for a raw KRW amount (no Product model required).
+
+        Used for purchased items where only price is known (e.g. receipt items).
+        """
+        estimated_refund_krw = calculate_demo_refund_krw(price_krw)
+        estimated_refund_price_krw = price_krw - estimated_refund_krw
+        try:
+            fx_rate = self._exchange_rates.get_cached_rate(currency).rate
+        except ExchangeRateUnavailableError:
+            converted_retail_price = None
+            converted_estimated_refund = None
+            converted_estimated_refund_price = None
+        else:
+            converted_retail_price = _convert(price_krw, fx_rate)
+            converted_estimated_refund = _convert(estimated_refund_krw, fx_rate)
+            converted_estimated_refund_price = _convert(
+                estimated_refund_price_krw,
+                fx_rate,
+            )
+
+        return PriceQuote(
+            retail_price_krw=price_krw,
+            estimated_refund_krw=estimated_refund_krw,
+            estimated_refund_price_krw=estimated_refund_price_krw,
+            converted_retail_price=converted_retail_price,
+            converted_estimated_refund=converted_estimated_refund,
+            converted_estimated_refund_price=converted_estimated_refund_price,
+            converted_amount=converted_estimated_refund_price,
+            converted_currency=currency,
+            instant_refund_eligible=price_krw < self._INSTANT_REFUND_TRANSACTION_LIMIT_KRW,
         )
 
 
